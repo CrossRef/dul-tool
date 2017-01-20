@@ -6,13 +6,13 @@ Version 0.1 - First draft
 
 ## Introduction 
 
-DUL (Distributed Usage Logging) is a standard that allows messages containing usage data to be sent from Producers to Consumers. DUL's Message Authentication mechanism enables Producers to share data with Consumers such that Consumers can be confident in the origin and integrity of the message.
+DUL (Distributed Usage Logging) is a system that allows messages containing usage data to be sent from Producers to Consumers. DUL's Message Authentication mechanism enables Producers to share data with Consumers such that Consumers can be confident in the origin and integrity of the message.
 
 The DUL Working Group has members from both the Producer and Consumer groups. Within both groups there is a diversity of requirements and priorities. This Recommendation establishes a baseline that allows Producers to indicate their identity when sending the message and allows Consumers to trust the identity of the sender and the integrity of the message. 
 
 For Producers who are not able to fully implement Message Authentication when sending messages, this Recommendation establishes two further levels of partial implementation.
 
-For Consumers who are not able to fully implement Message Authentication when consuming messages, this Recommendation establishes a 'relaxed' mode (in additional to the default 'strict' mode) in which messages can be read but no Authentication takes place.
+For Consumers who are not able to fully implement Message Authentication when consuming messages, this Recommendation establishes a 'relaxed' mode (in additional to the default 'strict' mode) in which messages can be read but no authentication takes place.
 
 This Recommendation aims to use open, popular standards, so that full implementation is convenient, straightforward and portable.
 
@@ -44,7 +44,7 @@ There are five roles are involved in DUL:
 
  1. COUNTER - an organisation that defines the content of the DUL envelope. This is beyond the scope of this Message Authentication report.
  2. Crossref - an organisation that provides a mapping of DOIs to DUL endpoints via the DOI system.
- 3. Message Authentication Authority - the organisation that provides the infrastructure for verifying authenticity. At the time of writing this is Crossref, but the role may be transferred to another party e.g. to COUNTER.
+ 3. Message Authentication Authority - the organisation that provides the infrastructure for verifying authenticity. At the time of writing this is Crossref, but the role may be transferred to another party e.g. to COUNTER. Referred to as 'Authority' in the rest of this document.
  4. Producer - a party generating data and sending messages. These are organisations like hosting platforms.
  5. Consumer - a party receiving data. These are publishers (Crossref members) or their agents.
 
@@ -54,28 +54,28 @@ The Message Authentication framework relates to the transport of a DUL Envelope 
 
 ### Recommended Specification Abstract
 
-DUL Messages Authentication will be implemented using the JWT (JSON Web Tokens) family of technologies. JWT is a collection of pre-existing technologies and techniques that align very closely with the aims of DUL.
+DUL Messages Authentication will be implemented using the JWT (JSON Web Tokens) family of specifications. JWT is a collection of pre-existing technologies and techniques that align very closely with the aims of DUL.
 
 All DUL messages will be sent as a JWT message.
 
 DUL provides three levels of Producer implementation:
 
- - Level 3: Authenticity checks with RSA and PKI. Recommended and standard.
+ - Level 3: Authenticity checks with RSA and PKI. Recommended and default.
  - Level 2: Integrity checks with HMAC. Not recommended, but may be necessary for some Producers.
  - Level 1: No integrity or authenticity checks. Not recommended, but may be necessary for some Producers.
 
 Two levels of Consumer are defined:
 
- - Strict: Authenticity and integrity are validated. Recommended and standard.
+ - Strict: Authenticity and integrity are validated. Recommended and default.
  - Relaxed: No checks are made. Not recommended. 
 
 JWS (JSON Web Signature) is a part of the JWT specification. It defines how messages are signed. JWS defines algorithms for all three Producer Levels:
 
- - For Level 3 (standard), the `rs256` algorithm is used.
+ - For Level 3 (default), the `rs256` algorithm is used.
  - For Level 2, the `hm256` algorithm is used.
  - For Level 1, the `none` algorithm is used.
 
-For Level 2, a well-known, public HMAC256 'secret' is defined. For Level 3, Producers create RSA Public / Private Key Pairs and sign their messages. The Message Authentication Authority operates a Public Key Server to host the public keys.
+For Level 2, a well-known, public HMAC256 'secret' is defined. For Level 3, Producers create RSA Public / Private Key Pairs and sign their messages. The Authority operates a Public Key Server to host the public keys.
 
 # Discussion
 
@@ -85,11 +85,11 @@ For some Producers, or Consumers who rely on them, it is important that the send
 
 Some Producers may perceive the overhead of using PKI as too much of an implementation burden, but still wish to include a message digest to indicate whether or not the message has been accidentally tampered with en route.
 
-Some Producers may be unwilling to apply any integrity or authentication verification to the message. The working group considered that this level of implementation to be important, and that participation in DUL was contingent on this option.
+Some Producers may be unable to apply any integrity or authentication verification to the message. The working group considered that this level of implementation to be important, and that participation in DUL was contingent on this option.
 
 ## Reliability of Integrity Checks at Level 2
 
-The Integrity Check performed at Producer Level 2 is able to demonstrate that the message has not changed between the Producer and the Consumer. This gives some confidence to the Consumer that the message has not been accidentally tampered with en route, and that the complete message has been received. 
+The Integrity Check performed at Producer Level 2 is able to demonstrate that the message has not changed between the Producer and the Consumer. This gives some confidence to the Consumer that the message has not been accidentally altered with en route, and that the complete message has been received. 
 
 Level 2 does not guard against malicious interference because it is possible to tamper with the message and re-create the signature.
 
@@ -137,7 +137,7 @@ JWS defines a number of algorithms to produce and verify signatures, including a
 
 Because Level 2 uses a symmetric secret for HMAC signing, both producers and consumers must know the 'secret', which is defined in the specification. Therefore Level 2, as discussed above, cannot be used to guarantee against malicious tampering.
 
-JWS defines a `jku` (JWS Key URL) field in the JWS header. This is a URL that holds the public key that was used to sign the message. Producers create these keys and sending them to the Message Authentication Authority. The Authority encodes the Producer ID in the URL and ensures the identity of the Public Key sender.
+JWS defines a `jku` (JWS Key URL) field in the JWS header. This is a URL that holds the public key that was used to sign the message. Producers create these keys and sending them to the Authority. The Authority encodes the Producer ID in the URL and ensures the identity of the Public Key sender.
 
 An example URL:
 
@@ -400,6 +400,7 @@ To compare the procedure in an X.509 world with the Recommendation:
 
 X.509:
 
+ - Message Authentication Authority distributes root certificate to all Consumers
  - Producer makes Key Pair
  - Producer makes a certificate
  - Producer sends a Certificate Signing Request to Message Authentication Authority
