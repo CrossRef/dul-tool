@@ -35,6 +35,105 @@ import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
 
+abstract class DulException extends Exception {
+}
+
+class WrongConsumerLevelException extends DulException {
+  private String level;
+  private String algorithm;
+
+  WrongConsumerLevelException(String level, String algorithm) {
+    this.level = level;
+    this.algorithm = algorithm;
+  }
+
+  public String getMessage() {
+    return "Consumer Level " + this.level + " incompatible with algorithm " + this.algorithm;
+  }
+}
+
+class MissingJwkException extends DulException {
+  private String supplied;
+
+  MissingJwkException(String supplied) {
+    this.supplied = supplied;
+  }
+
+  public String getMessage() {
+    return String.format("JWK not supplied or didn't exist. Supplied: %s", this.supplied);
+  }
+}
+
+class MissingJkuUrlException extends DulException {
+  private String supplied;
+
+  MissingJkuUrlException(String supplied) {
+    this.supplied = supplied;
+  }
+
+  public String getMessage() {
+    return String.format("JKU_URL not supplied or didn't exist. Supplied: %s", this.supplied);
+  }
+}
+
+class BadJkuUrlPrefixException extends DulException {
+  private String supplied;
+  private String expected;
+
+  BadJkuUrlPrefixException(String supplied, String expected) {
+    this.supplied = supplied;
+    this.expected = expected;
+  }
+
+  public String getMessage() {
+    return String.format("JKU_URL had the wrong prefix. Got '%s', expected '%s'", supplied, expected);
+  }
+}
+
+class BadJkuUrlProducerException extends DulException {
+  private String supplied;
+  private String expected;
+
+  BadJkuUrlProducerException(String supplied, String expected) {
+    this.supplied = supplied;
+    this.expected = expected;
+  }
+
+  public String getMessage() {
+    return String.format("JKU_URL had the wrong prefix for the PRODUCER_ID. Got '%s', expected '%s'", supplied, expected);
+  }
+}
+
+class RsaVerificationException extends DulException {
+  public String getMessage() {
+    return "Failed to validate input with RSA (Level 3) signature.";
+  }
+}
+
+class HmacVerificationException extends DulException {
+  public String getMessage() {
+    return "Failed to validate input with HMAC (Level 2) signature.";
+  }
+}
+
+class StrictModeCompatibilityException extends DulException {
+  private String algorithm;
+
+  public StrictModeCompatibilityException(String algorithm) {
+    this.algorithm = algorithm;
+  }
+
+  public String getMessage() {
+    return String.format("Strict mode does not allow the algorithm: %s", this.algorithm);
+  }
+}
+
+class IssuerUnknownException extends DulException {
+  public String getMessage() {
+    return "The PRODUCER_ID was not supplied in the 'iss' header field.";
+  }
+}
+
 public class App {
   private static String PRODUCER_LEVEL_1 = "1";
   private static String PRODUCER_LEVEL_2 = "2";
@@ -53,122 +152,158 @@ public class App {
 
   private static List<JWSAlgorithm> STRICT_ALGORITHMS = Arrays.asList(JWSAlgorithm.RS256, JWSAlgorithm.HS256);
 
-  private static void sign(String producerLevel, String jkuUrl, String producerId, InputStream input, OutputStream output, String jwkPath) {
+  // Sign the input with CONSUMER_LEVEL 1
+  private static void sign1(InputStream input, OutputStream output, String producerId) {
     try {
       String content = IOUtils.toString(input, Charset.forName("UTF-8"));
       Payload payload = new Payload(content);
-      
-      // Select algorithm based on PRODUCER_LEVEL.
-      JWSAlgorithm algorithm = null;
-      JWSSigner signer = null;
-      if (producerLevel.equals(PRODUCER_LEVEL_1)) {
-        // No algorithm, we don't sign.
-      } else if (producerLevel.equals(PRODUCER_LEVEL_2)) {
-        algorithm = JWSAlgorithm.HS256;
-        signer = new MACSigner(HMAC_SECRET);
 
-      } else if (producerLevel.equals(PRODUCER_LEVEL_3)) {
-        // Check required params.
-        if (jwkPath == null || jwkPath.length() == 0 || !Files.exists(Paths.get(jwkPath))) {
-          helpAndExit("JWK not supplied or doesn't exist.");
-        }
+      Map<String, Object> customParams = new HashMap<String, Object>();
+      customParams.put("iss", producerId);
 
-        if (jkuUrl == null || jkuUrl.length() == 0) {
-          helpAndExit("JKU_URL not supplied.");
-        }
+      PlainHeader header = new PlainHeader(null, null, null, customParams, null);
+      PlainObject object = new PlainObject(header, payload);
 
-        algorithm = JWSAlgorithm.RS256;
-        
-        String keyContent = IOUtils.toString(new FileInputStream(jwkPath), Charset.forName("UTF-8"));
-        JWK jwk = JWK.parse(keyContent);
-        RSAKey rsa = (RSAKey)jwk;
-        signer = new RSASSASigner(rsa);
-
-      } else {
-        helpAndExit("Unexpected PRODUCER_LEVEL");
-      }
-
-      // Level 1 gets no signature
-      // Levels 2 and 3 get a signature.
-      if (producerLevel.equals(PRODUCER_LEVEL_1)) {
-        Map<String, Object> customParams = new HashMap<String, Object>();
-        customParams.put("iss", producerId);
-        PlainHeader header = new PlainHeader(null, null, null, customParams, null);
-        PlainObject object = new PlainObject(header, payload);
-
-        output.write(object.serialize().getBytes("UTF-8"));
-
-      } else {
-        // Create a JWS with the specified algorithm depending on level.
-        // Set the `iss` header to the PRODUCER_ID.
-        JWSHeader.Builder builder = new JWSHeader.Builder(algorithm).customParam("iss", producerId);
-
-        if (producerLevel.equals(PRODUCER_LEVEL_3)) {
-          builder = builder.jwkURL(new URI(jkuUrl));
-        }
-
-        JWSObject jwsObject = new JWSObject(builder.build(), payload);
-        jwsObject.sign(signer);
-        output.write(jwsObject.serialize().getBytes("UTF-8"));
-      }
-
-    } catch (Exception e) {
-      e.printStackTrace();
-      System.out.println(e.getMessage());
-
+      output.write(object.serialize().getBytes("UTF-8"));  
+    } catch (IOException ex) {
+      fatal("Error with input or output.");
     }
   }
 
-  private static void validate(String consumerLevel, InputStream input, OutputStream output) {
+  // Sign the input with CONSUMER_LEVEL 2
+  private static void sign2(InputStream input, OutputStream output, String producerId) {
+    try {
+      String content = IOUtils.toString(input, Charset.forName("UTF-8"));
+      Payload payload = new Payload(content);
+
+      JWSAlgorithm algorithm = JWSAlgorithm.HS256;
+      JWSSigner signer = new MACSigner(HMAC_SECRET);
+
+      // Set the `iss` header to the PRODUCER_ID.
+      JWSHeader.Builder builder = new JWSHeader.Builder(algorithm)
+        .customParam("iss", producerId);
+
+      JWSObject jwsObject = new JWSObject(builder.build(), payload);
+      jwsObject.sign(signer);
+      output.write(jwsObject.serialize().getBytes("UTF-8"));
+    } catch (com.nimbusds.jose.KeyLengthException ex) {
+      fatal("Invalid input supplied.");
+    } catch (com.nimbusds.jose.JOSEException ex) {
+      fatal("Unexpected eror signing with HMAC.");
+    } catch (IOException ex) {
+      System.err.println("Error with input or output.");
+    }
+  }
+
+  // Sign the input with CONSUMER_LEVEL 2
+  private static void sign3(InputStream input, OutputStream output, String producerId, String jkuUrl, String jwkPath) {
+    try {
+      String content = IOUtils.toString(input, Charset.forName("UTF-8"));
+      Payload payload = new Payload(content);
+
+      // Check required params.
+      if (jwkPath == null || jwkPath.length() == 0 || !Files.exists(Paths.get(jwkPath))) {
+        throw new MissingJwkException(jwkPath);
+      }
+
+      if (jkuUrl == null || jkuUrl.length() == 0) {
+        throw new MissingJkuUrlException(jkuUrl);
+      }
+
+      if (!jkuUrl.startsWith(WHITELIST_URL_PREFIX)) {
+        throw new BadJkuUrlPrefixException(jkuUrl, WHITELIST_URL_PREFIX);
+      }
+
+      if (!jkuUrl.startsWith(WHITELIST_URL_PREFIX.concat(producerId))) {
+        throw new BadJkuUrlProducerException(jkuUrl, WHITELIST_URL_PREFIX.concat(producerId));
+      }
+
+      JWSAlgorithm algorithm = JWSAlgorithm.RS256;
+      
+      String keyContent = IOUtils.toString(new FileInputStream(jwkPath), Charset.forName("UTF-8"));
+      JWK jwk = JWK.parse(keyContent);
+      RSAKey rsa = (RSAKey)jwk;
+      JWSSigner signer = new RSASSASigner(rsa);
+
+      JWSHeader.Builder builder = new JWSHeader.Builder(algorithm).customParam("iss", producerId).jwkURL(new URI(jkuUrl));
+
+      JWSObject jwsObject = new JWSObject(builder.build(), payload);
+      jwsObject.sign(signer);
+      output.write(jwsObject.serialize().getBytes("UTF-8"));
+    
+    } catch (java.net.URISyntaxException ex) {
+      fatal("JKU_URL invalid");
+    } catch (java.io.FileNotFoundException ex) {
+      fatal("JWK file does not exist.");
+    } catch (java.text.ParseException ex) {
+      fatal("Error reading JWK.");
+    } catch (com.nimbusds.jose.JOSEException ex) {
+      fatal("Unexpected eror signing with RSA.");
+    } catch (IOException ex) {
+      fatal("Error with reading or writing.");
+    } catch (DulException ex) {
+      fatal(ex.getMessage());
+    }
+  }
+
+  // Validate message, send output to output stream and return sender ID.
+  // Or return null.
+  private static String validate(boolean strict, InputStream input, OutputStream output) {
+    String issuer = null;
     try {
       String token = IOUtils.toString(input, Charset.forName("UTF-8"));
 
       JOSEObject object = JOSEObject.parse(token);
       Algorithm algorithm = object.getHeader().getAlgorithm();
-      String issuer = (String)object.getHeader().getCustomParam("iss");
+      issuer = (String)object.getHeader().getCustomParam("iss");
 
       // Issuer must be present in all cases.
       // Furthermore, allowing an empty issuer would provide a security hole for authenticity validation with the URL prefix.
       if (issuer == null || issuer.length() < 2) {
-        fatal("Issuer header missing from JWT.");
+        throw new IssuerUnknownException();
       }
 
-      // Send info to stderr out of stdout stream.
-      System.err.println("Sender: " + issuer);
-
-      if (consumerLevel.equals(CONSUMER_RELAXED)) {
-        // Relaxed mode does no validation.
+      // Relaxed mode does no validation.
+      if (!strict) {
         output.write(object.getPayload().toBytes());
+        output.write("\n".getBytes("UTF-8"));
 
-      } else if (consumerLevel.equals(CONSUMER_STRICT)) {
+      // Strict mode now needs to verify the signature.
+      } else {
+
         if (!STRICT_ALGORITHMS.contains(algorithm)) {
-          fatal("Algorithm " + algorithm.toString() + " not allowed in strict mode.");
+          throw new StrictModeCompatibilityException(algorithm.toString());
         }
 
         JWSObject jwsObject = JWSObject.parse(token);
 
+        // HMAC tokens produced by Level 2.
         if (algorithm.equals(JWSAlgorithm.HS256)) {
+
+          // Use constant, public secret.
           JWSVerifier verifier = new MACVerifier(HMAC_SECRET);
 
           boolean success = jwsObject.verify(verifier);
 
           if (!success) {
-            fatal("Could not verify JWS with HMAC.");
+            throw new HmacVerificationException();
           } else {
             output.write(jwsObject.getPayload().toBytes());
+            output.write("\n".getBytes("UTF-8"));
           }
 
+        // RSA tokens produced by Level 3.
         } else if (algorithm.equals(JWSAlgorithm.RS256)) {
           URL jwkUrl = jwsObject.getHeader().getJWKURL().toURL();
 
           if (!jwkUrl.toString().startsWith(WHITELIST_URL_PREFIX)) {
-            fatal("JKU URL does not have whitelisted prefix. Expected: " + WHITELIST_URL_PREFIX + " but found: " + jwkUrl.toString());
+            throw new BadJkuUrlPrefixException(jwkUrl.toString(), WHITELIST_URL_PREFIX);
           }
 
           // Match up the issuer with the URL for the JWK.
-          String expectedPrefix = WHITELIST_URL_PREFIX + issuer;
+          String expectedPrefix = WHITELIST_URL_PREFIX.concat(issuer);
           if (!jwkUrl.toString().startsWith(expectedPrefix)) {
-            fatal("JKU URL does not have whitelisted prefix for issuer. Expected: " + expectedPrefix + " but found: " + jwkUrl.toString());
+            throw new BadJkuUrlProducerException(jwkUrl.toString(), expectedPrefix);
           }
 
           // If it's OK, load the JWK and get the first one.
@@ -180,23 +315,32 @@ public class App {
           boolean success = jwsObject.verify(verifier);
 
           if (!success) {
-            fatal("Could not verify JWS with RSA.");
+            throw new RsaVerificationException();
           } else {
             output.write(jwsObject.getPayload().toBytes());
+            output.write("\n".getBytes("UTF-8"));
           }
         }
       }
-
-} catch (Exception e) {
-System.out.println("EX " + e.getMessage());
-
-
-}
-    
-
+    } catch (java.net.MalformedURLException ex) {
+      fatal("JKU was invalid.");
+      issuer = null;
+    } catch (IOException ex) {
+      fatal("Error with reading or writing.");
+      issuer = null;
+    } catch (java.text.ParseException ex) {
+      fatal("Error parsing input message.");
+      issuer = null;
+    } catch (com.nimbusds.jose.JOSEException ex) {
+      fatal("Unexpected error validating.");
+      issuer = null;
+    } catch (DulException ex) {
+      fatal(ex.getMessage());
+      issuer = null;
+    } finally {
+      return issuer;
+    }
   }
-
-
 
   private static void helpAndExit(String errorMessage) {
     if (errorMessage != null) {
@@ -225,11 +369,9 @@ System.out.println("EX " + e.getMessage());
     if (errorMessage != null) {
       System.err.println("Error: " + errorMessage);
     }
+
     System.exit(1);
   }
-
-
-
 
   private static InputStream getInput(String arg) {
     try {
@@ -288,7 +430,6 @@ System.out.println("EX " + e.getMessage());
   }
 
   private static String getConsumerId() {
-    // 4.1: The `CONSUMER_LEVEL` environment variable can be supplied. If supplied it can be 1, 2 or 3. If not supplied the default value is 3.
     String value = System.getenv("CONSUMER_LEVEL");
 
     if (value == null || value.length() == 0) {
@@ -311,26 +452,43 @@ System.out.println("EX " + e.getMessage());
     OutputStream output = getOutput(args[2]);
 
     if (args[0].equals("sign")) {
-
       String producerLevel = getProducerLevel();
       String producerId = System.getenv("PRODUCER_ID");
-
-      // These can be null, but are checked before they're needed.
-      String jwkPath = System.getenv("JWK");
-      String jkuUrl = System.getenv("JKU_URL");
 
       if (producerId == null || producerId.length() == 0) {
         helpAndExit("PRODUCER_ID not supplied");
       }
 
-      // todo check null url and produer id
+      // Choose which level of signing.
+      if (producerLevel.equals(PRODUCER_LEVEL_1)) {
+        sign1(input, output, producerId);
+      } else if (producerLevel.equals(PRODUCER_LEVEL_2)) {
+        sign2(input, output, producerId);
+      } else if (producerLevel.equals(PRODUCER_LEVEL_3)) {
+        String jwkPath = System.getenv("JWK");
+        String jkuUrl = System.getenv("JKU_URL");
 
-      sign(producerLevel, jkuUrl, producerId, input, output, jwkPath);
-    
+        sign3(input, output, producerId, jkuUrl, jwkPath);
+      } else {
+        
+
+        helpAndExit(String.format("Unrecognised PRODUCER_LEVEL of: %s", producerLevel));
+      }
     } else if (args[0].equals("validate")) {
       String consumerLevel = getConsumerLevel();
 
-      validate(consumerLevel, input, output);
+      boolean strict = true;
+      if (consumerLevel.equals(CONSUMER_STRICT)) {
+        strict = true;
+      } else if (consumerLevel.equals(CONSUMER_RELAXED)) {
+        strict = false;
+      } else {
+        helpAndExit(String.format("Unrecognised CONSUMER_LEVEL value of: %s", consumerLevel));
+      }
+
+      String producerId = validate(strict, input, output);
+      
+      System.out.println(producerId);
     } else {
       helpAndExit("didn't recognise command '" + args[0] + "'.");
     }

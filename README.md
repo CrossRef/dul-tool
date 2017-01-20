@@ -71,26 +71,31 @@ The tool conforms to the following specifications:
 7. If `PRODUCER_LEVEL` is 1 and 'sign' is invoked:
 	1. The input will be signed using the 'none' algorithm, as specified in the 'alg' header.
 	2. No signature will be attacehd, as per the 'none' algorithm's specification
-8. If `CONSUMER_LEVEL` is 'strict' and `validate` is invoked:
-	1. The `alg` header field must be 'rsa256' or 'hmac256'. Otherwise validation will fail.
-  	2. If the `alg` header field is 'hmac256':
-	  	1. The JWS must validate using the 'hmac256' algorithm and the hard-coded secret.
-  	3. If the `alg` header field is 'rsa256':
+8. If `validate` is invoked and validation is successful:
+	1. The payload plus a `\n` character will be sent to the stipulated file or STDOUT
+	2. The producer id will be sent to STDOUT after the payload is sent to the output.
+	3. The process will exit with an exit code of 0
+9. If `validation` is invoked and validation is unsuccessfu:
+	1. Any error messages will be sent to STDERR.
+	2. The process will exit with a non-zero exit code.
+10. If `CONSUMER_LEVEL` is 'strict' and `validate` is invoked:
+	1. The `iss` header field must be present.
+	2. The `alg` header field must be 'rsa256' or 'hmac256'. Otherwise validation will fail.
+  3. If the `alg` header field is 'hmac256':
+		1. The JWS must validate using the 'hmac256' algorithm and the hard-coded secret.
+ 	4. If the `alg` header field is 'rsa256':
 		1. The `jku` header field must be present or validation will fail.
 		2. The `jku` header field must be a URL that has the prefix "https://dul-token.crossref.org/tokens/jwk/PRODUCER_ID", where `PRODUCER_ID` exactly matches the `iss` header field. If the URL does not match the validation will fail.
 		3. There must be a valid public key JWK available at the given URL.
 		4. The first available key will be taken from the keyset if more than one is available.
 		5. The JWS of the JWT must succeed using the RSA256 algorithm and this key.
-10. If `CONSUMER_LEVEL` is 'relaxed' and 'validate' is invoked:
-	1. The 'alg' header is ignored.
-	2. The message is accepted whether or not it has a signature.
-	3. No signature checking is performed. Inputs from `CONSUMER_LEVEL` 1, 2 and 3 can be read, but no validation of any form will be performed.
-11. The output from `PRODUCER_LEVEL` 1, 2 and 3 can be consumed but not verified by `CONSUMER_LEVEL` of 'relaxed'.
-12. The output from `PRODUCER_LEVEL` 1, and 3 can be consumed and verified by `CONSUMER_LEVEL` of 'strict'.
-
-
-TODO ISSUER MUST BE PRESENT FOR BOTH CONSUMER LEVELS
-
+11. If `CONSUMER_LEVEL` is 'relaxed' and 'validate' is invoked:
+	1. The `iss` header field must be present.
+	2. The `alg` header is ignored.
+	3. The message is accepted whether or not it has a signature.
+	4. No signature checking is performed. Inputs from `PRODUCER_LEVEL` 1, 2 and 3 can be read, but no validation of any form will be performed.
+12. The output from `PRODUCER_LEVEL` 1, 2 and 3 can be consumed but not verified by `CONSUMER_LEVEL` of 'relaxed'.
+13. The output from `PRODUCER_LEVEL` 1, and 3 can be consumed and verified by `CONSUMER_LEVEL` of 'strict'.
 
 These numbered points are referenced in the code, change them with care.
 
@@ -129,14 +134,21 @@ As level 3 is the default, she could also have typed:
 
 ### Consumers
 
-Zxc and Spqr and Wombat are Consumers and want to receive data. For the sake of argument, Jim, Fred and Sheila send their messages to all Consumers. They send their output to STDOUT for ease of demonstration.
+Zxc and Spqr and Wombat are Consumers and want to receive data. For the sake of example, Jim, Fred and Sheila send their messages to both Consumers. 
+
+#### Relaxed consumer
 
 Zcx is a relaxed 1 consumer. It reads the sent messages from Jim, Fred and Sheila. In relaxed mode, it can read everything, but can't validate any of the information.
 
 1: Relaxed Zcx reads Jim:
 
-    $ CONSUMER_LEVEL=relaxed java -jar demo/dultool.jar validate demo/output/jim-dul-message.jwt -
-    Sender: jim
+    $ CONSUMER_LEVEL=relaxed java -jar demo/dultool.jar validate demo/output/jim-dul-message.jwt demo/output/jim-relaxed.json
+    jim
+
+    $ echo $? # exit code
+    0
+
+    $ cat demo/output/jim-relaxed.json && echo
     {
       "uuid": "e583eca0-fdf4-45ff-8c8e-2c3ce1196ea1",
       "message-type": "counter-download",
@@ -148,10 +160,17 @@ Zcx is a relaxed 1 consumer. It reads the sent messages from Jim, Fred and Sheil
       }
     }
 
+Notice that the PRODUCER_ID 'jim' was sent to STDOUT and we the input was retrieved from
+
 2: Relaxed Zcx reads Fred:
 
-    $ CONSUMER_LEVEL=relaxed java -jar demo/dultool.jar validate demo/output/fred-dul-message.jwt -
-    Sender: fred
+    $ CONSUMER_LEVEL=relaxed java -jar demo/dultool.jar validate demo/output/fred-dul-message.jwt demo/output/fred-relaxed.json
+    fred
+
+    $ echo $? # exit code
+    0
+
+    $ cat demo/output/fred-relaxed.json && echo
     {
       "uuid": "e583eca0-fdf4-45ff-8c8e-2c3ce1196ea2",
       "message-type": "counter-download",
@@ -162,11 +181,16 @@ Zcx is a relaxed 1 consumer. It reads the sent messages from Jim, Fred and Sheil
         "element-2": "bar"
       }
     }
-
+    
 3: Relaxed Zcx reads Sheila:
 
-    $ CONSUMER_LEVEL=relaxed java -jar demo/dultool.jar validate demo/output/sheila-dul-message.jwt -
-    Sender: sheila
+    $ CONSUMER_LEVEL=relaxed java -jar demo/dultool.jar validate demo/output/sheila-dul-message.jwt demo/output/sheila-relaxed.json
+    sheila
+
+    $ echo $? # exit code
+    0
+
+    $ cat  demo/output/sheila-relaxed.json && echo
     {
       "uuid": "e583eca0-fdf4-45ff-8c8e-2c3ce1196ea3",
       "message-type": "counter-download",
@@ -178,19 +202,31 @@ Zcx is a relaxed 1 consumer. It reads the sent messages from Jim, Fred and Sheil
       }
     }
 
+#### Strict consumer
+
 Spqr is a strict consumer. It can trust the output.
 
 1: Strict Spqr reads Jim:
 
-    $ CONSUMER_LEVEL=strict java -jar demo/dultool.jar validate demo/output/jim-dul-message.jwt -
-    Error: Algorithm none not allowed in strict mode.
+    $ CONSUMER_LEVEL=strict java -jar demo/dultool.jar validate demo/output/jim-dul-message.jwt demo/output/jim-strict.json
+    Error: Strict mode does not allow the algorithm: none
 
-Because Jim uses Level 1 and therefore no information can be verified, the input can't be parsed.
+    $ echo $? # exit code
+    1 
 
-2: Strict Spqr reads Fred:
+    $ cat demo/output/jim-strict.json && echo
 
-    CONSUMER_LEVEL=strict java -jar demo/dultool.jar validate demo/output/fred-dul-message.jwt -
-    Sender: fred
+Because Jim uses Level 1 and therefore no information can be verified, the input can't be parsed. The non-zero exit code indicates an operation.
+
+2: Strict Spqr reads Fred. The output and the sender ID are both written to STDOUT because of the `-` output file option. In real operation they could be sent to different places.
+
+    CONSUMER_LEVEL=strict java -jar demo/dultool.jar validate demo/output/fred-dul-message.jwt demo/output/fred-strict.json
+    fred
+
+    $ echo $? # exit code
+    0
+
+    $ cat demo/output/fred-strict.json && echo
     {
       "uuid": "e583eca0-fdf4-45ff-8c8e-2c3ce1196ea2",
       "message-type": "counter-download",
@@ -206,8 +242,13 @@ Because Fred used Level 2 (HMAC), the output ingegrity could be verified ok.
 
 3: Strict Spqr reads Sheila.
 
-    $ CONSUMER_LEVEL=strict java -jar demo/dultool.jar validate demo/output/sheila-dul-message.jwt -
-    Sender: sheila
+    $ CONSUMER_LEVEL=strict java -jar demo/dultool.jar validate demo/output/sheila-dul-message.jwt demo/output/output/sheila-strict.json
+    shiela
+
+    $ echo $? # exit code
+    0
+
+    $ cat demo/output/sheila-strict.json && echo
     {
       "uuid": "e583eca0-fdf4-45ff-8c8e-2c3ce1196ea3",
       "message-type": "counter-download",
