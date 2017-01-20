@@ -15,7 +15,7 @@ Command is one of:
  - `sign`: Produce a JWT
  - `validate`: Validate a JWT and return the JSON, if valid
 
-The input-file can be a path to a file or - for STDIN. The output-file can be a path to a file or - for STDOUT.
+The input-file can be a path to a file or `-` for STDIN. The output-file can be a path to a file or `-` for STDOUT.
 
 When the `validate` command is used:
 
@@ -24,18 +24,17 @@ When the `validate` command is used:
 
 When the `sign` command is used:
  - The Producer level is 3 by default.
- - The `PRODUCER_ID` environment variable must be supplied. This is the unique ID of the producer, supplied by Crossref
  - It can be specified as level 1, 2 or 3 using the `PRODUCER_LEVEL` environment variable.
+ - The `PRODUCER_ID` environment variable must be supplied. This is the unique ID of the producer, supplied by Crossref
  - If `PRODUCER_LEVEL` 3 is specified the following environemnt environment variables are required:
-
-	 - `JWK` - path to a JKU file containing a private key as a JWK
-	 - `JKU_URL` - JKU path to the JWK containing only the public key, as supplied by Crossref.
+   - `JWK` - path to a JKU file containing a private key as a JWK.
+   - `JKU_URL` - JKU path to the JWK containing only the public key, as supplied by Crossref.
 
 ## Generating JKU keys
 
 Public and Private Keys can be generated using Nimbus JWT Generator, available here: http://connect2id.com/products/nimbus-jose-jwt/generator
 
-	java -jar json-web-key-generator.jar -t RSA -s 2048 -i example-provider -u sig -S -p
+  java -jar json-web-key-generator.jar -t RSA -s 2048 -i example-provider -u sig -S -p
 
 The private key should be kept secret and used as the `JWK` argument. The public key should be sent to Crossref, who will supply you with a `JKU_URL`.
 
@@ -45,57 +44,56 @@ This tool is a reference implementation of normative Specification from the Cros
 
 The tool conforms to the following specifications:
 
-1. If `PRODUCER_LEVEL` is 3, then `JWK` and `JKU_URL` environment variables must be supplied.
-2. There is a hard-coded HMAC256 secret that must be used whenever a HMAC signature is used. Its value is "dul-77d343c3-f8e8-48d9-9e14-1e52aa8611e8",
-3. When the 'sign' command is used:
-	1. The tool will accept an input from a file or STDIN
-	2. The output will be a JWT, signed and sent to the output file or STDOUT
-	4. The input will be the payload of the JWT.
+1. Whenever HMAC signing is used, the hard-coded HMAC256 secret must be used. Its value is `dul-77d343c3-f8e8-48d9-9e14-1e52aa8611e8`.
+2. When the 'sign' command is used:
+  1. The tool will accept an input from a file or STDIN.
+  2. The output will be a JWT, signed and sent to the output file or STDOUT.
+  4. The input will be the payload of the JWT.
   5. The `PRODUCER_LEVEL` environment variable can be supplied. If supplied it can be 1, 2 or 3. If not supplied, the default value is 3. 
-	6. The `PRODUCER_ID` will be used as the `iss` header field.
-	7. The tool does not care about the format of the input. 
-4. When the 'validate' command is used
+  6. The `PRODUCER_ID` will be used as the `iss` header field.
+  7. The tool does not care about the format of the input. 
+3. When the 'validate' command is used
   1. The `CONSUMER_LEVEL` environment variable can be supplied. If supplied it can be 'strict' or 'relaxed'. If not supplied the default value is 'strict'.
-	2. The tool will accept an input from a file or STDIN, as a JWT.
-	3. It will validate the input according to the rules specified below
-	4. On success, the output will be the input's payload, sent to the file or STDOUT.
-	5. If the input cannot be validated, errors will be sent to STDERR, nothing will be sent to the output, and the program exit code will be non-zero.
-5. If `PRODUCER_LEVEL` is 3 and `sign` is invoked:
-	1. The input will be signed using the 'rsa256' algorithm, as specified in the 'alg' header.
-	2. a path to a valid RSA JWK must be provided with `JWK` option
-	3. a URL that contains the public JWK must be provided with the `JWK_URL` option
-	4. the input will be signed using RSA256 and the JWK private key
-6. If `PRODUCER_LEVEL` is 2 and 'sign' is invoked:
-	1. The input will be signed using the 'hmac256' algorithm, as specified in the 'alg' header.
-	2. The hard-coded DUL secret of will be used for HMAC signing
-7. If `PRODUCER_LEVEL` is 1 and 'sign' is invoked:
-	1. The input will be signed using the 'none' algorithm, as specified in the 'alg' header.
-	2. No signature will be attacehd, as per the 'none' algorithm's specification
-8. If `validate` is invoked and validation is successful:
-	1. The payload plus a `\n` character will be sent to the stipulated file or STDOUT
-	2. The producer id will be sent to STDOUT after the payload is sent to the output.
-	3. The process will exit with an exit code of 0
-9. If `validation` is invoked and validation is unsuccessfu:
-	1. Any error messages will be sent to STDERR.
-	2. The process will exit with a non-zero exit code.
-10. If `CONSUMER_LEVEL` is 'strict' and `validate` is invoked:
-	1. The `iss` header field must be present.
-	2. The `alg` header field must be 'rsa256' or 'hmac256'. Otherwise validation will fail.
+  2. The tool will accept an input from a file or STDIN, as a JWT.
+  3. It will validate the input according to the rules specified below
+  4. On success, the output will be the input's payload, sent to the file or STDOUT.
+  5. If the input cannot be validated, errors will be sent to STDERR, nothing will be sent to the output, and the program exit code will be non-zero.
+4. If `PRODUCER_LEVEL` is 3 and `sign` is invoked:
+  1. The input will be signed using the 'rsa256' algorithm, as specified in the 'alg' header.
+  2. A path to a valid RSA JWK must be provided with `JWK` option.
+  3. A URL that contains the public JWK must be provided with the `JWK_URL` option.
+  4. the input will be signed using RSA256 and the JWK private key
+5. If `PRODUCER_LEVEL` is 2 and 'sign' is invoked:
+  1. The input will be signed using the 'hmac256' algorithm, as specified in the 'alg' header.
+  2. The hard-coded DUL secret of will be used for HMAC signing
+6. If `PRODUCER_LEVEL` is 1 and 'sign' is invoked:
+  1. The input will be signed using the 'none' algorithm, as specified in the 'alg' header.
+  2. No signature will be attacehd, as per the 'none' algorithm's specification
+7. If `validate` is invoked and validation is successful:
+  1. The payload plus a `\n` character will be sent to the stipulated file or STDOUT
+  2. The producer id will be sent to STDOUT after the payload is sent to the output.
+  3. The process will exit with an exit code of 0
+8. If `validation` is invoked and validation is unsuccessfu:
+  1. Any error messages will be sent to STDERR.
+  2. The process will exit with a non-zero exit code.
+9. If `CONSUMER_LEVEL` is 'strict' and `validate` is invoked:
+  1. The `iss` header field must be present.
+  2. The `alg` header field must be 'rsa256' or 'hmac256'. Otherwise validation will fail.
   3. If the `alg` header field is 'hmac256':
-		1. The JWS must validate using the 'hmac256' algorithm and the hard-coded secret.
- 	4. If the `alg` header field is 'rsa256':
-		1. The `jku` header field must be present or validation will fail.
-		2. The `jku` header field must be a URL that has the prefix "https://dul-token.crossref.org/tokens/jwk/PRODUCER_ID", where `PRODUCER_ID` exactly matches the `iss` header field. If the URL does not match the validation will fail.
-		3. There must be a valid public key JWK available at the given URL.
-		4. The first available key will be taken from the keyset if more than one is available.
-		5. The JWS of the JWT must succeed using the RSA256 algorithm and this key.
-11. If `CONSUMER_LEVEL` is 'relaxed' and 'validate' is invoked:
-	1. The `iss` header field must be present.
-	2. The `alg` header is ignored.
-	3. The message is accepted whether or not it has a signature.
-	4. No signature checking is performed. Inputs from `PRODUCER_LEVEL` 1, 2 and 3 can be read, but no validation of any form will be performed.
-12. The output from `PRODUCER_LEVEL` 1, 2 and 3 can be consumed but not verified by `CONSUMER_LEVEL` of 'relaxed'.
-13. The output from `PRODUCER_LEVEL` 1, and 3 can be consumed and verified by `CONSUMER_LEVEL` of 'strict'.
+    1. The JWS must validate using the 'hmac256' algorithm and the hard-coded secret.
+  4. If the `alg` header field is 'rsa256':
+    1. The `jku` header field must be present or validation will fail.
+    2. The `jku` header field must be a URL that has the prefix "https://dul-token.crossref.org/tokens/jwk/PRODUCER_ID", where `PRODUCER_ID` exactly matches the `iss` header field. If the URL does not match the validation will fail.
+    3. There must be a valid public key JWK available at the given URL.
+    4. The first available key will be taken from the keyset if more than one is available.
+    5. The JWS of the JWT must succeed using the RSA256 algorithm and this key.
+10. If `CONSUMER_LEVEL` is 'relaxed' and 'validate' is invoked:
+  1. The `iss` header field must be present.
+  2. The `alg` header is ignored.
+  3. The message is accepted whether or not it has a signature.
+  4. No signature checking is performed. Inputs from `PRODUCER_LEVEL` 1, 2 and 3 can be read, but no validation of any form will be performed.
+11. The output from `PRODUCER_LEVEL` 1, 2 and 3 can be consumed but not verified by `CONSUMER_LEVEL` of 'relaxed'.
+12. The output from `PRODUCER_LEVEL` 1, and 3 can be consumed and verified by `CONSUMER_LEVEL` of 'strict'.
 
 These numbered points are referenced in the code, change them with care.
 
