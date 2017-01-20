@@ -1,0 +1,48 @@
+  // Load private key.
+  // On error print message and exit.
+  private static RSAPrivateKey loadPrivateKey(String privateKeyPath) {
+    try {
+      KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+      byte[] privateKeyBytes = Files.readAllBytes(new File(privateKeyPath).toPath());
+      PKCS8EncodedKeySpec privateSpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+
+      RSAPrivateKey privateKey = (RSAPrivateKey)keyFactory.generatePrivate(privateSpec);
+      return privateKey;
+
+    } catch (NoSuchAlgorithmException ex) {
+      System.err.println("Internal error (NoSuchAlgorithmException).");
+      System.exit(1);
+    } catch (IOException ex) {
+      System.err.println("Internal error (IOException).");
+      System.exit(1);
+    } catch (InvalidKeySpecException ex) {
+      System.err.println("Error: There was a problem loading the Private Key from " + privateKeyPath);
+      System.err.println(ex.getMessage());
+      System.exit(1);
+    }
+
+    return null;
+  }
+
+  // todo as path?
+  // private static void sign(String producerId, InputStream input, OutputStream output, String privateKeyPath) {
+  //   RSAPrivateKey privateKey = loadPrivateKey(privateKeyPath);
+
+  //   try {
+  //     String content = IOUtils.toString(input, Charset.forName("UTF-8"));
+
+  //     String token = JWT.create()
+  //       .withIssuer(producerId)
+  //       .withClaim("dul", content)
+  //       .sign(Algorithm.RSA256(privateKey));
+
+  //     output.write(token.getBytes(Charset.forName("UTF-8")));
+
+  //     output.close();
+  //   } catch (JWTCreationException exception){
+  //     System.err.println("Error signing:");
+  //     System.err.println(exception.getMessage());
+  //   } catch (IOException ex) {
+  //     System.err.println("Error reading input or writing JWT");
+  //   }
+  // }

@@ -1,0 +1,10 @@
+{
+  "uuid": "e583eca0-fdf4-45ff-8c8e-2c3ce1196ea7",
+  "message-type": "counter-download",
+  "source-token": "hZqJDbcbKSSRgRG_PJxSBA",
+  "callback": "http://example.com/counter-share-callback",
+  "message": {
+    "element-1": "foo",
+    "element-2": "bar"
+  }  
+}

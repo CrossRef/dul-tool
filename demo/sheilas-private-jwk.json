@@ -1,0 +1,8 @@
+{
+  "kty": "RSA",
+  "d": "KpluxqgMFDkkIVn_zy28KRuY9XzoaTzeF5ditw_stIVFZyDtKdJy2uLpKxNdCmYp36QkH1C7DSOvpoiq0sdFBpCtR7yX1k3t3JfbW3SOysLdO-8-HyfOV6YF-s-CV8-2T07EUhn8jfqlFtBQPOXCYTR4bv4us7cWhloj9Y4w2_rHvApxd96Zy3AWUe---KNPoOaTzdrurIyf7oWwfveMIg8w_6_osnrA0EyfYex2OoBVkWJxheLUEiuGUV3fZFIerd92-Be2VnwaBJTL4dA3vD439mVu5_mTUB62Fqs8YqlSVcpZ8MYStGO_EGKa5e-y2C_XHeug43xuA2XRnZv-QQ",
+  "e": "AQAB",
+  "use": "sig",
+  "kid": "example-provider",
+  "n": "ia2N0zF_VZWa4kId2_bAIW06aiungQNzXl_S76WOFPtNfo1l9w6TxjO18cQpR3hQqw_6yrXFv7Mz0FV1urFL2JUebijy1NI5wEsKHb4HArj5cgFjsC_XMM-ePwpXZ1Hb4aoMLlX7M8aSaY8GGa2g5ifdGVuZg0rXV4v8DqvtCkcbNqR-evrpdw3Dmo5ORd7G4AOlb2Pf093wED5ZfPYGBd0fOz8xasI828qvkhyUIuuOscV-XX--4YGV3PtFM-abaz-8PtKLwF77TGolCoQR590vZTPYy4FBpKyyba2CQvImUaf99lCsQXaMhV0J9-ZnzjP4tLRDwNQMo7ws6hLFHQ"
+}
