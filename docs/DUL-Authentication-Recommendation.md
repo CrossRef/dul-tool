@@ -228,6 +228,10 @@ The Specification section is normative. A non-normative reference implementation
 
 ## Further Reading
 
+### JWT.io
+
+http://jwi.io contains everything you could ever hope to know.
+
 ### JWT Book
 
  - Sebastian E. Peyrott, Auth0 Inc.
