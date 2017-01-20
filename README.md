@@ -132,7 +132,7 @@ As level 3 is the default, she could also have typed:
 
 ### Consumers
 
-Zxc and Spqr and Wombat are Consumers and want to receive data. For the sake of example, Jim, Fred and Sheila send their messages to both Consumers. 
+Zxc and Spqr are Consumers and want to receive data. For the sake of example, Jim, Fred and Sheila send their messages to both Consumers. 
 
 #### Relaxed consumer
 
@@ -262,5 +262,5 @@ Because Sheila used Level 3 (RSA), the output integrity can be verified, as can 
 
 ## To build
 
-  mvn assembly:assembly -DdescriptorId=jar-with-dependencies
-  cp target/dultool-1.0-SNAPSHOT-jar-with-dependencies.jar demo/dultool.jar
+	  mvn assembly:assembly -DdescriptorId=jar-with-dependencies
+	  cp target/dultool-1.0-SNAPSHOT-jar-with-dependencies.jar demo/dultool.jar
