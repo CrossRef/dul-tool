@@ -32,9 +32,9 @@ The Working Group identified the principles that underpin DUL's Message Authenti
 The Working Group identified four techniques for achieving the above:
  
  - Unique, public identifiers assigned to Sending parties by the Message Authentication Authority.
- - Public Key Cryptography to enable Producers to sign messages in such a way that Consumers can be confident of integrity, authenticity and non-repudiation.
- - HMAC (Keyed Hash Message Authentication) to enable Producers to sign messages in such a way as Consumers can be confident that the message was not accidentally tampered with.
- - An implementation with no form of integrity or authenticity checking
+ - Public Key Cryptography to enable Producers to sign messages in such a way that Consumers can be confident of integrity, authenticity and non-repudiation, and to protect against replay attacks.
+ - Checksum to enable Producers to provide a means of checking (but not guranteeing) that the message was not accidentally tampered with.
+ - An implementation with no form of integrity or authenticity checking.
 
 This Recommendation comes with a simple reference implementation. The tool serves as a proof-of-concept, reference implementation for integration with existing systems, or as a stand-alone tool in production. See the Appendix.
 
@@ -63,7 +63,7 @@ All DUL messages will be sent as a JWT with the JSON-serialized DUL message as t
 DUL provides three levels of Producer implementation:
 
  - Level 3: Authenticity checks with RSA signing. Recommended and default.
- - Level 2: Integrity checks with HMAC. Not recommended, but may be necessary for some Producers.
+ - Level 2: Checksum using HMAC. This gives an indication (but not proof) that the message was not accidentally changed in transit. Not recommended, but may be necessary for some Producers.
  - Level 1: No integrity or authenticity checks. Not recommended, but may be necessary for some Producers.
 
 Two levels of Consumer are defined:
@@ -74,7 +74,7 @@ Two levels of Consumer are defined:
 JWS (JSON Web Signature) is a part of the JWT specification. It defines how messages are signed. JWS defines algorithms for all three Producer Levels:
 
  - For Level 3 (default), the `rs256` algorithm is used.
- - For Level 2, the `hm256` algorithm is used.
+ - For Level 2, the `hm256` algorithm is used to provide a checksum.
  - For Level 1, the `none` algorithm is used.
 
 For Level 2, a well-known, public HMAC256 'secret' is defined. For Level 3, Producers create RSA Public / Private Key Pairs and sign their messages. The Authority operates a Public Key Server to host the public keys.
@@ -109,7 +109,7 @@ Level 2 does not guard against malicious interference because it is possible to 
 
 Both the Producer and the Consumer require access to the HMAC 'secret' in order to sign and validate respectively. Therefore any party with access to the 'secret' is able to maliciously tamper with the message and re-sign it. Because one of the aims of the Message Authentication specification is that Producers messages may be shared with other parties, public or private, the 'secret' is published and known by all parties.
 
-To achieve full non-repudiation, Level 3 is required.
+Level 2 doesn't provide protection against replay attacks or non-repudiation. For these features Level 3 is required.
 
 ## Reliability of Authenticity Checks at Level 3
 
@@ -149,7 +149,7 @@ The JWT's JOSE header contains an `iss` field. This indicates the Producer ID. A
 
 JWS defines a number of algorithms to produce and verify signatures, including a special 'none' algorithm. The `none` algorithm is used for Level 1, `HS256` is used for Level 2 and `RS256` for Level 3.
 
-Because Level 2 uses a symmetric secret for HMAC signing, both producers and consumers must know the 'secret', which is defined in the specification. Therefore Level 2, as discussed above, cannot be used to guarantee against malicious tampering.
+The aim at Level 2 is to provide a checksum which enables the Consumer to check that the message didn't change in transit. JWS provides no simple checksum feature, so HMAC is used, along with a published shared secret. Because Level 2 uses a symmetric secret for HMAC signing, both producers and consumers must know the 'secret', which is defined in the specification. Therefore Level 2, as discussed above, cannot be used to guarantee against malicious tampering.
 
 JWS defines a `jku` (JWS Key URL) field in the JWS header. This is a URL that holds the Public Key that was used to sign the message. Producers create these keys and sending them to the Authority. The Authority encodes the Producer ID in the URL and ensures the identity of the Public Key sender.
 
