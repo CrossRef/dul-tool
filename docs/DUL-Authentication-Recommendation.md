@@ -349,6 +349,10 @@ It also allows for an arbitrary payload to be sent. If in future the DUL Working
 
 In theory the payload could be embedded as a private claim, but it would either have to be a JSON object as a string, which would complicate implementation, or as first-class objects in the JWT claim, which would couple the Authentication with the DUL business logic.
 
+### Why use HMAC for checksum?
+
+JWS provides two kinds of algorithms (RFC 7581 §3.1): checksum based (HMAC), and Public / Private key based (RSA and ECDSA). There is no simple 'checksum' algorithm, largely because of the fact that it provides no security. For this reason, HMAC coupled with a known shared secret is the best fit.
+
 ### Why is the HMAC secret public?
 
 HMAC is a symmetrical algorithm: the secret used to sign the payload must be known both to the Producer and Consumer. Therefore it must be made known to all Producers and all Consumers. The DUL Working Group identified the need to be able to share DUL messages with third parties or even make them known publicly. This would further broaden the audience who would need to know the secret. 
