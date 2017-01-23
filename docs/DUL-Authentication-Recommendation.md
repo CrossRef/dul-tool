@@ -77,6 +77,18 @@ JWS (JSON Web Signature) is a part of the JWT specification. It defines how mess
 
 For Level 2, a well-known, public HMAC256 'secret' is defined. For Level 3, Producers create RSA Public / Private Key Pairs and sign their messages. The Authority operates a Public Key Server to host the public keys.
 
+#### Producer Level 3 overview
+
+![Level 3 overview](./data-flow-levels-3.png)
+
+#### Producer Level 2 overview
+![Level 2 overview](./data-flow-levels-2.png)
+
+#### Producer Level 1 overview
+![Level 1 overview](./data-flow-levels-1.png)
+
+
+
 # Discussion
 
 ## Producer Levels 
@@ -149,6 +161,8 @@ The Authority is responsible for storing and serving these JWK keys.
 The Recommended DUL Message Authentication Specification stipulates that the URL must be match a specified prefix, to ensure that only JKUs issued by the  Authority can be accepted. 
 
 Furthermore, the Producer ID must be included are a prefix of the ID, and this must match the `iss` field in the JWS header. 
+
+![structure of a DUL message](structure.png)
 
 ## Specification
 
@@ -328,14 +342,6 @@ This does mean anyone can sign a DUL message. Therefore Level 2 protects message
 
 For some members of the Working Group, implementing integrity and authenticity is was a blocker. Therefore to ensure the broadest participation, Levels 1 and 2 were introduced.
 
-### Is signature stripping possible?
-
-Signature stripping is the process of taking a payload, maliciously altering it, and re-signing. 
-
-Level 3 signing requires the Producer to sign the message with their private key, which is known only by them. Therefore it is not possible for a malicious party to to re-sign the message using a fraudulent key.
-
-Furthermore, the URL whitelist prevents fraudulently signed messages from non DUL-members from passing validation.
-
 ### How does this ensure that only the specified sender is who they say they are?
 
 The JKU URL prefix ensures that only Producers who are DUL members can sign messages. This is coupled with the Producer ID included in the URL to uniquely identify the Producer Id. The Authority only issues JKU URLs to verified Producers.
@@ -348,13 +354,15 @@ The three Producer levels are based on ability to implement the standard, but th
 
 Having three levels of Consumer based the three levels (none, integrity and authenticity) would produce a compatibility matrix something like:
 
-|                | **Consumer 1**        | **Consumer 2**               | **Consumer 3**       |
-|----------------|-----------------------|------------------------------|----------------------|
-| **Producer 1** | YES. Can read.        | NO. Cannot verify integrity. | NO. Cannot verify.   |
-| **Producer 2** | NO. Cannot read HMAC. | YES. Can verify HMAC.        | NO. Cannot read HMAC.|
-| **Producer 3** | NO. Cannot read RSA.  | NO. Cannot read RSA.         | Yes. Can verify RSA. |
+|                | **Consumer 1**        | **Consumer 2**         | **Consumer 3**       |
+|----------------|-----------------------|------------------------|----------------------|
+| **Producer 1** | YES. Can read.        | YES. Can read.         | YES. Can read.       |
+| **Producer 2** | NO. Cannot read HMAC. | YES. Can verify HMAC.  | YES. Can verify HMAC.|
+| **Producer 3** | NO. Cannot read RSA.  | NO. Cannot read RSA.   | YES. Can verify RSA. |
 
-This complicates implementation somewhat. Having a simple "validate input" or "don't validate input" is clearer and simpler to implement.
+In this case, the higher the Consumer Level, the more input can be read. However, the level of security still depends on the Producer Level: a Level 3 Consumer could read a Level 1 message, but that would not make it trustworthy.
+
+Having a simple "validate input" or "don't validate input" more closely aliigns business cases for Consumers.
 
 ### When should messages be verified?
 
@@ -394,7 +402,7 @@ The DUL model trusts the good faith of both Producers and Consumers (whilst also
 
 ### Would it be more efficient to use a Root Certification Authority and X.509?
 
-An alternative architecture would be to establish the Message Authentication Authority as a Certificate Authority à la X.509 and using a certificate chain. JWS does have support for X.509. Using a certificate chain would establish that the Producer was authorised to send DUL messages, and the authenticity of the sender.
+An alternative architecture would be to establish the Message Authentication Authority as a Certificate Authority à la X.509 and using a certificate chain. JWS does have support for X.509, so this is possible in theory. Using a certificate chain would establish that the Producer was authorised to send DUL messages, and the authenticity of the sender.
 
 To compare the procedure in an X.509 world with the Recommendation:
 
@@ -421,7 +429,36 @@ Recommendation:
  - Consumer follows JKU to retrieve public key
  - Consumer uses JWK from JKU to validate message
 
-The job that an X.509 certificate does is achieved simply by the JKU URL prefix. X.509 is more complex and provides no benefits for the DUL use case.
+X.509 is useful in the following circumstances:
+
+ 1. a certificate (which can carry other information) is needed
+ 2. there is a need to be able to trust more than one Root Certification Authority in an environment where multiple intermediary Certification Authorities can operate
+ 3. the Root Certification Authority, the Consumer and the Producer do not directly co-ordinate with one another
+
+None of these apply to DUL Authentication:
+
+ 1. no extra information is required (Producer ID is communicated in the JWT and verified with a whitelist)
+ 2. only one Authority is required, as the Authority (Crossref) is the only party overseeing DUL
+ 3. the Authority, the Producers and Consumers are in close co-ordination: the Producers must register with Crossref and the Consumers are members of Crossref.
+
+X.509 is more complex and provides no benefits for the DUL use case.
+
+### Why not use HTTP headers?
+
+HTTP headers were considered as an earlier proposal for source tokens. It was suggested that both the Publisher ID and content integrity could be supplied via HTTP headers.
+
+JWT encapsulates the concept of header, body payload and signature, similar to an HTTP message. JWT has some advantages:
+
+ - a JWT has built-in JWS signing as a default. This means that semantics about how to use headers are well-defined.
+ - a JWT is encapsulated as a single object. This means that a JWT can be stored for processing later, transmission to another party, or as part of an audit chain. 
+
+Furthermore, in order to securely identify the sender of the message, the Publisher ID must be included in the signed message. If the signature were stored in an HTTP header then this would not be possible. With JWT, the headers are included in the signature.
+
+### Why is the Producer ID stored outside the DUL Envelope?
+
+The current Envelope Spec includes the 'source token' field to indicate the sender. In order to produce a specification that allows for all three levels, the JWT must contain the producer's ID at a level accessible to the verification process (so that Level 3 checks can whitelist the public key URL supplied with the `jku` field).
+
+The committee may wish to refine the Envelope specification to remove the `source token` field as, if this recommendation is accepted, that information will already be included as the JWT header.
 
 ### Why use JKU? Why not just ship all the Public Keys to all Consumers?
 
@@ -429,9 +466,17 @@ This approach would be valid, but would take more effort and co-ordination. It w
 
 Instead, using JKUs, the keys are downloaded only when needed, and automatically. They can be cached to avoid having to re-fetch them. The specification stipulates that once keys are published at a URL they are immutable (although they can be removed).
 
+### Is signature stripping possible?
+
+Signature stripping is the process of taking a payload, maliciously altering it, and re-signing. 
+
+Level 3 signing requires the Producer to sign the message with their private key, which is known only by them. Therefore it is not possible for a malicious party to to re-sign the message using a fraudulent key.
+
+Furthermore, the URL whitelist prevents fraudulently signed messages from non DUL-members from passing validation.
+
 ### Is this vulnerable to common JWT attacks?
 
-Signature stripping is covered in an above question. Security at Level 0 is quantified, and Level 1 (where signature stripping is possible) is not allowed in 'strict' Consumer mode. You can read about [past JWT vulnerabilities here](https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/).
+Security at Level 1 is quantified, and Level 2 (where signature stripping is possible) is not allowed in 'strict' Consumer mode. You can read about [past JWT vulnerabilities here](https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/).
 
 
 
