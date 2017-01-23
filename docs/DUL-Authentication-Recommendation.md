@@ -32,7 +32,7 @@ The Working Group identified the principles that underpin DUL's Message Authenti
 The Working Group identified four techniques for achieving the above:
  
  - Unique, public identifiers assigned to Sending parties by the Message Authentication Authority.
- - PKI (Public Key Infrastructure) to enable Producers to sign messages in such a way that Consumers can be confident of integrity, authenticity and non-repudiation.
+ - Public Key Cryptography to enable Producers to sign messages in such a way that Consumers can be confident of integrity, authenticity and non-repudiation.
  - HMAC (Keyed Hash Message Authentication) to enable Producers to sign messages in such a way as Consumers can be confident that the message was not accidentally tampered with.
  - An implementation with no form of integrity or authenticity checking
 
@@ -54,13 +54,15 @@ The Message Authentication framework relates to the transport of a DUL Envelope 
 
 ### Recommended Specification Abstract
 
-DUL Messages Authentication will be implemented using the JWT (JSON Web Tokens) family of specifications. JWT is a collection of pre-existing technologies and techniques that align very closely with the aims of DUL.
+DUL Message Authentication will be implemented using the JWT (JSON Web Tokens) family of specifications. JWT is a collection of pre-existing technologies and techniques that align very closely with the aims of DUL.
 
-All DUL messages will be sent as a JWT message.
+All DUL messages will be sent as a JWT with the JSON-serialized DUL message as the payload.
+
+![JOSE object](jose.png)
 
 DUL provides three levels of Producer implementation:
 
- - Level 3: Authenticity checks with RSA and PKI. Recommended and default.
+ - Level 3: Authenticity checks with RSA signing. Recommended and default.
  - Level 2: Integrity checks with HMAC. Not recommended, but may be necessary for some Producers.
  - Level 1: No integrity or authenticity checks. Not recommended, but may be necessary for some Producers.
 
@@ -93,9 +95,9 @@ For Level 2, a well-known, public HMAC256 'secret' is defined. For Level 3, Prod
 
 ## Producer Levels 
 
-For some Producers, or Consumers who rely on them, it is important that the sender and integrity a DUL message can be reliably known. Level 3, the default level, provides this functionality.
+For some Producers, or Consumers who rely on them, it is important that the sender and integrity of a DUL message can be reliably known. Level 3, the default level, provides this functionality.
 
-Some Producers may perceive the overhead of using PKI as too much of an implementation burden, but still wish to include a message digest to indicate whether or not the message has been accidentally tampered with en route.
+Some Producers may perceive the overhead of using Public / Private Keys as too much of an implementation burden, but still wish to include a message digest to indicate whether or not the message has been accidentally tampered with en route.
 
 Some Producers may be unable to apply any integrity or authentication verification to the message. The working group considered that this level of implementation to be important, and that participation in DUL was contingent on this option.
 
@@ -111,9 +113,9 @@ To achieve full non-repudiation, Level 3 is required.
 
 ## Reliability of Authenticity Checks at Level 3
 
-Level 3 relies on Public Key Infrastructure to sign the message. A full discussion of PKI is beyond the scope of this document.
+Level 3 relies on Public / Private Keys to sign the message. A full discussion of Public Key Cryptography is beyond the scope of this document.
 
-Every Producer has a public / private keypair. According to the principles of PKI, the message is signed by the private keypair and the public key of every Producer is published and known to all parties. Any consumer is able to use the public key to verify that the holder of the corresponding private key, and only the holder of that key, signed the message. This allows for non-repudiation.
+Every Producer has a Public / Private keypair. According to the principles of Public Key Cryptography, the message is signed by the private keypair and the Public key of every Producer is published and known to all parties. Any consumer is able to use the Public key to verify that the holder of the corresponding private key, and only the holder of that key, signed the message. This allows for non-repudiation.
 
 ## Consumer Levels
 
@@ -139,7 +141,7 @@ The JWT family of technologies, formally JOSE (JavaScript Object Signing & Encry
 
  - JWT - JSON Web Token - a format for serialising data
  - JWS - JSON Web Signature - a standard for signing (with HMAC or RSA) JWTs
- - JWK - JSON Web Key - a standard for representing public/private keys
+ - JWK - JSON Web Key - a standard for representing Public / Private Keys
 
 A JWT contains a header, which contains information about the message, a payload (which is the DUL envelope), and a signature, which is used to verify the integrity and/or authenticity.
 
@@ -149,7 +151,7 @@ JWS defines a number of algorithms to produce and verify signatures, including a
 
 Because Level 2 uses a symmetric secret for HMAC signing, both producers and consumers must know the 'secret', which is defined in the specification. Therefore Level 2, as discussed above, cannot be used to guarantee against malicious tampering.
 
-JWS defines a `jku` (JWS Key URL) field in the JWS header. This is a URL that holds the public key that was used to sign the message. Producers create these keys and sending them to the Authority. The Authority encodes the Producer ID in the URL and ensures the identity of the Public Key sender.
+JWS defines a `jku` (JWS Key URL) field in the JWS header. This is a URL that holds the Public Key that was used to sign the message. Producers create these keys and sending them to the Authority. The Authority encodes the Producer ID in the URL and ensures the identity of the Public Key sender.
 
 An example URL:
 
@@ -179,7 +181,7 @@ The Specification section is normative. A non-normative reference implementation
   1. The Producer ID MUST be unique.
   2. The Producer ID MUST be URL-Safe and have a length greater than 1 character.
   3. The Producer ID MAY be made public.
-2. Every Producer may operate at Level 1, 2 or 3. This choice is made when for each message sent and can be made or changed at any time.
+2. Every Producer MUST operate at Level 1, 2 or 3. This choice is made when for each message sent and can be made or changed at any time.
 3. If a Producer wishes to implement Level 3, they Producer MUST create one or more Public/Private Keypairs.
   1. Each Keypair MUST be in the JWK format.
   2. Each Private Key MUST be kept secret by the sender.
@@ -202,7 +204,7 @@ The Specification section is normative. A non-normative reference implementation
   5. When a JKU is published at a URL, the content MUST NOT be subsequently changed.
 6. Every DUL message MUST be sent as a JWT.
   1. Every message MUST have the `iss` field in the JOSE header.
-  2. The value of the `iss` field MUST be the Publisher ID.
+  2. The value of the `iss` field MUST be the Producer ID.
   3. Every message MUST include an `alg` field.
   4. The `alg` field MUST have a value of `none`, `hm256` or `rs256`.
     1. An `alg` value of `none` signifies Level 1.
@@ -230,21 +232,21 @@ The Specification section is normative. A non-normative reference implementation
   1. The `iss` header MUST be present and have a length greater than 1 to pass validation.
   2. The `alg` header MUST be present and one of `rs256` or `hm256` to pass validation.
   3. If the `alg` header value is `hm256`:
-    1. The published HMAC256 secret MUST be used to verify the message.
-    2. HMAC256 validation MUST succeed to pass validation.
+     1. The published HMAC256 secret MUST be used to verify the message.
+     2. HMAC256 validation MUST succeed to pass validation.
   4. If the `alg` header value is `rs256`:
-    1. The header MUST contain the `jku` field.
-    2. The value of the `jku` field MUST have the prefix of the published whitelist URL.
-    3. The value of the `jku` field MUST have the prefix of the published whitelist URL concatenated with the value of the `iss` field.
-    4. The Consumer MUST download the JKU at the specified URL.
-    5. The Consumer MAY cache the response of the JKU URL indefinitely.
-    6. Validation of the JWS MUST pass using the JKU.
+     1. The header MUST contain the `jku` field.
+     2. The value of the `jku` field MUST have the prefix of the published whitelist URL.
+     3. The value of the `jku` field MUST have the prefix of the published whitelist URL concatenated with the value of the `iss` field.
+     4. The Consumer MUST download the JKU at the specified URL.
+     5. The Consumer MAY cache the response of the JKU URL indefinitely.
+     6. Validation of the JWS MUST pass using the JKU.
 
 ## Further Reading
 
 ### JWT.io
 
-http://jwi.io contains everything you could ever hope to know.
+http://jwi.io contains extensive information about background and implementing JWT.
 
 ### JWT Book
 
@@ -290,39 +292,56 @@ The [Nimbus JOSE library and tools](http://connect2id.com/products/nimbus-jose-j
 
 ### PGP-Signed Messages
 
-PGP is an open source encryption and authentication framework that uses public / private keys. It a popular tool for signing emails. It relies on a web of trust for establishing trust between the Provider and Consumer. 
+PGP is an open source encryption and authentication framework that uses Public / Private Keys. It a popular tool for signing emails. It relies on a web of trust for establishing trust between the Provider and Consumer. 
 
-The principles behind PGP are very similar do DUL, but JWT providers a simpler implementation. 
+The principles behind PGP are very similar do DUL, but JWT provides a simpler implementation. 
 
 ### Opaque Tokens
 
-This was the first approach taken by the DUL Working Group, and it spurred conversation around issues of spoofing, replay and non-repudiation. An opaque token sent with a message is able to indicate the sender of the message, but no more. It can be re-used by another party by attaching it to another message. Note that this is Producer Level 1 is implemented, except the token (PUBLISHER_ID) is sent in the unsigned JOSE header.
+This was the first approach taken by the DUL Working Group, and it spurred conversation around issues of spoofing, replay and non-repudiation. An opaque token sent with a message is able to indicate the sender of the message, but no more. It can be re-used by another party by attaching it to another message. Note that this is Producer Level 1 is implemented, except the token is sent in the unsigned JOSE header as `iss`.
 
 ## Q&A
 
-### Why not just use JWT in headers?
+### Why not just use JWT in HTTP headers?
 
 JWTs are commonly used in the role of authentication tokens. However, in the DUL role they are typically used as a container for claims (e.g. "I am able to perform this action"). The aim of DUL Message Authentication is twofold: firstly to provide information about the message and secondly to provide information about the sender.
 
-It is conceivable that JWTs as header tokens could be used in this second role: a Provider could issue a JWT that identifies themselves in a manner that guarantees it was generated by the sender. However, this would only do half the job, as it would not take into account the content of the message. Furthermore, it would not provide non-repudiation as replay attacks would be possible (i.e. some malicious party takes the token and uses it to send another message).
+It is conceivable that JWTs as HTTP header tokens could be used in this second role: a Provider could issue a JWT that identifies themselves in a manner that guarantees it was generated by the sender. However, this would only do half the job, as it would not take into account the content of the message. Furthermore, it would not provide non-repudiation as replay attacks would be possible (i.e. some malicious party takes the token and uses it to send another message).
 
-To fulfil the first role, that of message integrity, a content hash would have to be taken and included as a claim in the JWT. This would solve the problem, but would be solving the problem by re-inventing a core part of JWS functionality. It would also add implemenation complexity.
+To fulfil the first role, that of message integrity, a content hash would have to be taken and included as a claim in the JWT. This would provide message integrity validation, but would be solving the problem by re-inventing a core part of JWS functionality. It would also add implemenation complexity.
 
-In order to take message content into account, the message would have to be included in the JWS. This is in fact what happens in Level 3: the whole DUL message is taken as the JWT payload, and the whole JWT is sent as the message.
+In order to take message content into account, the message would have to be included in the JWS. This is in fact what happens in Level 3: the whole DUL message is taken as the JWT payload, and the whole JWT is sent.
 
 ### Can I just send JSON?
 
 Sending JSON in the body of the message and then attaching some kind of checksum in the header would be possible, but more complicated to implement. JWT provides a convenient package, and the Specification allows for flexibility of requirements.
 
-As indicated in 'Why not just use JWT in headers?', Level 0 allows for the JSON content to be packaged as a JWT and sent without any integrity or authentication features.
+As indicated in 'Why not just use JWT in HTTP headers?', Level 1 allows for the JSON content to be packaged as a JWT and sent without any integrity or authentication features.
 
 Allowing two encoding formats, JWT for Levels 2 and 3 and plain JSON for Level 1 might seem simple, but it would increase the amount of work a Consumer would have to do to negotiate the type of content they are dealing with. Uniformity is a design goal.
 
 At both Producer and Consumer side, the software libraries to create and work with JWTs are as simple to use as the libraries for working with JSON.
 
-### Why send the DUL message as the whole payload? Why not embed as a 'private claim'?
+### Why not use HTTP headers as a general approach?
 
-The 'iss' claim is stipulated in the JWS header, not the payload, so there is no need for Authentication to look in the payload.
+HTTP headers were considered as an earlier proposal for source tokens. It was suggested that both the Producer ID and content integrity could be supplied via HTTP headers.
+
+JWT encapsulates the concept of header, body payload and signature, similar to an HTTP message. JWT has some advantages:
+
+ - a JWT has built-in JWS signing as a default. This means that semantics about how to use headers are well-defined.
+ - a JWT is encapsulated as a single object. This means that a JWT can be stored for processing later, transmission to another party, or as part of an audit chain. 
+
+Furthermore, in order to securely identify the sender of the message, the Producer ID must be included in the signed message. If the signature were stored in an HTTP header then this would not be possible. With JWT, the headers are included in the signature.
+
+### Why is the Producer ID stored outside the DUL Envelope?
+
+The current Envelope Spec includes the 'source token' field to indicate the sender. In order to produce a specification that allows for all three levels, the JWT must contain the producer's ID at a level accessible to the verification process (so that Level 3 checks can whitelist the Public Key URL supplied with the `jku` field).
+
+The committee may wish to refine the Envelope specification to remove the `source token` field as, if this recommendation is accepted, that information will already be included as the JWT header.
+
+### Why send the DUL message as the whole JOSE payload? Why not embed as a JWT 'private claim'?
+
+The 'iss' claim is provided in the JOSE header, not the payload (as is conventional with JWT), so there is no need for Authentication to look in the payload.
 
 Allowing the message to be included as the literal payload allows implementers to completely decouple their envelope parsing from their JWT verification, if they want to. They may use whatever JSON libraries they want to parse the payload, and may opt not to parse immediately, and to store for later. This decoupled approach brings the greatest compatibility and flexibility for implementation.
 
@@ -332,7 +351,7 @@ In theory the payload could be embedded as a private claim, but it would either 
 
 ### Why is the HMAC secret public?
 
-HMAC is a symmetrical algorithm: the secret used to sign the payload must be known both to the Producer and Consumer. Therefore it must be made known to all Publishers and all Consumers. The DUL Working Group identified the need to be able to share DUL messages with third parties or even make them known publicly. This would further broaden the audience who would need to know the secret. 
+HMAC is a symmetrical algorithm: the secret used to sign the payload must be known both to the Producer and Consumer. Therefore it must be made known to all Producers and all Consumers. The DUL Working Group identified the need to be able to share DUL messages with third parties or even make them known publicly. This would further broaden the audience who would need to know the secret. 
 
 Keeping the secret confidential under these circumstances would constitute 'security by obscurity', which is a well known way of achieving no security whatsoever. For this reason, it is better to publish the secret and make it well known.
 
@@ -362,7 +381,7 @@ Having three levels of Consumer based the three levels (none, integrity and auth
 
 In this case, the higher the Consumer Level, the more input can be read. However, the level of security still depends on the Producer Level: a Level 3 Consumer could read a Level 1 message, but that would not make it trustworthy.
 
-Having a simple "validate input" or "don't validate input" more closely aliigns business cases for Consumers.
+Having a simple "validate input" or "don't validate input" more closely aligns business cases for Consumers.
 
 ### When should messages be verified?
 
@@ -370,15 +389,15 @@ Messages should be verified on receipt, or soon after. If a Public Key is remove
 
 If Consumers wish to store messages and validate them a significant time after they are issued, they are welcome to download and store JWKs from the JKU URLs. This requires a custom implementation, but not a complicated one.
 
-### My organisation already issues public keys. Should they be reused?
+### My organisation already issues Public Keys. Should they be reused?
 
 No, we recommend you create dedicated keys for DUL. This allows you to manage them without coupling your DUL implementation to any other infrastructure that may use them.
 
 ### Why not use keybase.io
 
-DUL public key verification requires two things: for the keys to be published and for the publishers to be verified as DUL members and kept in a directory.
+DUL Public Key verification requires two things: for the keys to be published and for the producers to be verified as DUL members and kept in a directory.
 
-The Recommendation describes a very simple key server where the Authority acts as a registry for looking up keys. Because DUL keys are special-purpose, simple key server architecture suits our needs. Whichever service were used for serving public keys, the Authority would still need to operate the directory of DUL providers.
+The Recommendation describes a very simple key server where the Authority acts as a registry for looking up keys. Because DUL keys are special-purpose, simple key server architecture suits our needs. Whichever service were used for serving Public Keys, the Authority would still need to operate the directory of DUL providers.
 
 Involving an external party would create a dependency of infrastructure which would introduce another point of failure and limit portability.
 
@@ -396,13 +415,13 @@ No. For broadness of compatibility, we recommend only the specified algorithms. 
 
 ### How does DUL deal with key revocation and expiry?
 
-Keys can be removed from the public server by request of the Publisher. They may be cached by the Consumer. They do not include expiry dates.
+Keys can be removed from the public server by request of the Producer. They may be cached by the Consumer. They do not include expiry dates.
 
-The DUL model trusts the good faith of both Producers and Consumers (whilst also protecting against common attacks).
+The DUL model trusts the good faith and direct communication between both Producers, Consumers and the Authority (whilst providing guarantees).
 
 ### Would it be more efficient to use a Root Certification Authority and X.509?
 
-An alternative architecture would be to establish the Message Authentication Authority as a Certificate Authority à la X.509 and using a certificate chain. JWS does have support for X.509, so this is possible in theory. Using a certificate chain would establish that the Producer was authorised to send DUL messages, and the authenticity of the sender.
+An alternative architecture would be to establish the Message Authentication Authority as a Root Certificate Authority à la X.509 and using a certificate chain. JWS does have support for X.509, so this is possible in theory. Using a certificate chain would establish that the Producer was authorised to send DUL messages, and the authenticity of the sender.
 
 To compare the procedure in an X.509 world with the Recommendation:
 
@@ -415,10 +434,10 @@ X.509:
  - Message Authentication Authority sends back a Certificate Chain
  - Producer hosts Certificate Chain on their server
  - Message Authentication Authority makes Root Public Certificate available to Consumers
- - Consumer recieves Event
+ - Consumer recieves message
  - Consumer retrieves X.509 certificate
  - Consumer follows certificate chain to verify chain of trust back to root CA (Message Authentication Authority)
- - Consumer uses public key from certificate to validate message
+ - Consumer uses Public Key from certificate to validate message
 
 Recommendation:
 
@@ -426,7 +445,7 @@ Recommendation:
  - Producer sends Key Pair to Message Authentication Authority
  - Message Authentication Authority sends back a JKU URL
  - Producer sends message
- - Consumer follows JKU to retrieve public key
+ - Consumer follows JKU to retrieve Public Key
  - Consumer uses JWK from JKU to validate message
 
 X.509 is useful in the following circumstances:
@@ -442,23 +461,6 @@ None of these apply to DUL Authentication:
  3. the Authority, the Producers and Consumers are in close co-ordination: the Producers must register with Crossref and the Consumers are members of Crossref.
 
 X.509 is more complex and provides no benefits for the DUL use case.
-
-### Why not use HTTP headers?
-
-HTTP headers were considered as an earlier proposal for source tokens. It was suggested that both the Publisher ID and content integrity could be supplied via HTTP headers.
-
-JWT encapsulates the concept of header, body payload and signature, similar to an HTTP message. JWT has some advantages:
-
- - a JWT has built-in JWS signing as a default. This means that semantics about how to use headers are well-defined.
- - a JWT is encapsulated as a single object. This means that a JWT can be stored for processing later, transmission to another party, or as part of an audit chain. 
-
-Furthermore, in order to securely identify the sender of the message, the Publisher ID must be included in the signed message. If the signature were stored in an HTTP header then this would not be possible. With JWT, the headers are included in the signature.
-
-### Why is the Producer ID stored outside the DUL Envelope?
-
-The current Envelope Spec includes the 'source token' field to indicate the sender. In order to produce a specification that allows for all three levels, the JWT must contain the producer's ID at a level accessible to the verification process (so that Level 3 checks can whitelist the public key URL supplied with the `jku` field).
-
-The committee may wish to refine the Envelope specification to remove the `source token` field as, if this recommendation is accepted, that information will already be included as the JWT header.
 
 ### Why use JKU? Why not just ship all the Public Keys to all Consumers?
 
