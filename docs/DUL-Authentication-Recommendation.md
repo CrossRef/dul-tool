@@ -70,9 +70,9 @@ All DUL messages will be sent as a JWT with the JSON-serialized DUL message as t
 
 DUL provides three levels of Producer implementation:
 
- - Level 3: Authenticity checks with RSA signing. This fulfils all of the security and authenticity objectives and is the most complete implementation.
- - Level 2: Checksum using HMAC. This gives an indication (but not proof) that the message was not accidentally changed in transit. This provides integrity but no authenticity checks.
- - Level 1: No integrity or authenticity checks. 
+ - Level 3: Identify message origin with token. Authenticity checks with RSA signing. This fulfils all of the security and authenticity objectives and is the most complete implementation.
+ - Level 2: Identify message origin with token. Checksum using HMAC. This gives an indication (but not proof) that the message was not accidentally changed in transit. This provides integrity but no authenticity checks.
+ - Level 1: Identify message origin with token. No integrity or authenticity checks. 
 
 Two levels of Consumer are defined:
 
