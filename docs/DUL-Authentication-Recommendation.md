@@ -16,7 +16,7 @@ For Consumers who are not able to fully implement Message Authentication when co
 
 This Recommendation aims to use open, popular standards, so that full implementation is convenient, straightforward and portable.
 
-The Working Group identified the principles that underpin DUL's Message Authentication:
+The following principles underpin DUL's Message Authentication strategy:
 
  - simplicity of implementation
  - portability of infrastructure
@@ -29,12 +29,20 @@ The Working Group identified the principles that underpin DUL's Message Authenti
  - ability to delegate processing of messages on the Consumer side, or to make messages public without compromising the Message Authenticity framework
  - defence against replay attacks
 
-The Working Group identified four techniques for achieving the above:
+The Working Group identified three levels of trust in the "DUL: proposed technical solutions for authentication" document:
 
- - Unique, public identifiers assigned to Sending parties by the Message Authentication Authority.
- - Public Key Cryptography to enable Producers to sign messages in such a way that Consumers can be confident of integrity, authenticity and non-repudiation, and to protect against replay attacks.
- - Checksum to enable Producers to provide a means of checking (but not guranteeing) that the message was not accidentally tampered with.
- - An implementation with no form of integrity or authenticity checking.
+ - A: Identification of message origin
+ - B: Verification of message origin
+ - C: Verification of message content
+
+The Working Group identified four techniques for achieving the above. Numbers in brackets represent proposed options in the  document and letter represents trust level defined above:
+
+ - Unique, public identifiers assigned to Sending parties by the Message Authentication Authority. (Option 1, trust level A)
+ - Public Key Cryptography to enable Producers to sign messages in such a way that Consumers can be confident of integrity, authenticity and non-repudiation, and to protect against replay attacks. (Option 2c, trust level B)
+ - Checksum to enable Producers to provide a means of checking (but not guranteeing) that the message was not accidentally tampered with. (Part of option 2c, trust level C)
+ - An implementation with no form of integrity or authenticity checking. (Trust level C)
+
+They also identified a technique whereby tokens can one-time signed by a Private Key and verified (Option 2a), but this approach was not sufficiently distinct from Option 2b.
 
 This Recommendation comes with a simple reference implementation. The tool serves as a proof-of-concept, reference implementation for integration with existing systems, or as a stand-alone tool in production. See the Appendix.
 
@@ -62,14 +70,14 @@ All DUL messages will be sent as a JWT with the JSON-serialized DUL message as t
 
 DUL provides three levels of Producer implementation:
 
- - Level 3: Authenticity checks with RSA signing. Recommended and default.
- - Level 2: Checksum using HMAC. This gives an indication (but not proof) that the message was not accidentally changed in transit. Not recommended, but may be necessary for some Producers.
- - Level 1: No integrity or authenticity checks. Not recommended, but may be necessary for some Producers.
+ - Level 3: Authenticity checks with RSA signing. This fulfils all of the security and authenticity objectives and is the most complete implementation.
+ - Level 2: Checksum using HMAC. This gives an indication (but not proof) that the message was not accidentally changed in transit. This provides integrity but no authenticity checks.
+ - Level 1: No integrity or authenticity checks. 
 
 Two levels of Consumer are defined:
 
- - Strict: Authenticity and integrity are validated. Recommended and default.
- - Relaxed: No checks are made. Not recommended.
+ - Strict: Authenticity and integrity are validated. 
+ - Relaxed: No checks for authenticity, origin or integrity. 
 
 JWS (JSON Web Signature) is a part of the JWT specification. It defines how messages are signed. JWS defines algorithms for all three Producer Levels:
 
