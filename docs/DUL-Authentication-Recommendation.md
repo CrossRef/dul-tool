@@ -4,15 +4,15 @@ Joe Wass jwass@crossref.org
 
 Version 0.1 - First draft
 
-## Introduction 
+## Introduction
 
 DUL (Distributed Usage Logging) is a system that allows messages containing usage data to be sent from Producers to Consumers. DUL's Message Authentication mechanism enables Producers to share data with Consumers such that Consumers can be confident in the origin and integrity of the message.
 
-The DUL Working Group has members from both the Producer and Consumer groups. Within both groups there is a diversity of requirements and priorities. This Recommendation establishes a baseline that allows Producers to indicate their identity when sending the message and allows Consumers to trust the identity of the sender and the integrity of the message. 
+The DUL Working Group has members from both the Producer and Consumer groups. Within both groups there is a diversity of requirements and priorities. This Recommendation establishes a baseline that allows Producers to indicate their identity when sending the message and allows Consumers to trust the identity of the sender and the integrity of the message.
 
 For Producers who are not able to fully implement Message Authentication when sending messages, this Recommendation establishes two further levels of partial implementation.
 
-For Consumers who are not able to fully implement Message Authentication when consuming messages, this Recommendation establishes a 'relaxed' mode (in additional to the default 'strict' mode) in which messages can be read but no authentication takes place.
+For Consumers who are not able to fully implement Message Authentication when consuming messages, this Recommendation establishes a 'relaxed' mode (in addition to the default 'strict' mode) in which messages can be read but no authentication takes place.
 
 This Recommendation aims to use open, popular standards, so that full implementation is convenient, straightforward and portable.
 
@@ -30,7 +30,7 @@ The Working Group identified the principles that underpin DUL's Message Authenti
  - defence against replay attacks
 
 The Working Group identified four techniques for achieving the above:
- 
+
  - Unique, public identifiers assigned to Sending parties by the Message Authentication Authority.
  - Public Key Cryptography to enable Producers to sign messages in such a way that Consumers can be confident of integrity, authenticity and non-repudiation, and to protect against replay attacks.
  - Checksum to enable Producers to provide a means of checking (but not guranteeing) that the message was not accidentally tampered with.
@@ -40,7 +40,7 @@ This Recommendation comes with a simple reference implementation. The tool serve
 
 ### Roles in DUL
 
-There are five roles are involved in DUL:
+There are five roles involved in DUL:
 
  1. COUNTER - an organisation that defines the content of the DUL envelope. This is beyond the scope of this Message Authentication report.
  2. Crossref - an organisation that provides a mapping of DOIs to DUL endpoints via the DOI system.
@@ -50,7 +50,7 @@ There are five roles are involved in DUL:
 
 ### Scope
 
-The Message Authentication framework relates to the transport of a DUL Envelope and supporting infrastructure to enable Message Authentication. It does not concern the Message Envelope itself, or the contents of the envelope. 
+The Message Authentication framework relates to the transport of a DUL Envelope and supporting infrastructure to enable Message Authentication. It does not concern the Message Envelope itself, or the contents of the envelope.
 
 ### Recommended Specification Abstract
 
@@ -69,7 +69,7 @@ DUL provides three levels of Producer implementation:
 Two levels of Consumer are defined:
 
  - Strict: Authenticity and integrity are validated. Recommended and default.
- - Relaxed: No checks are made. Not recommended. 
+ - Relaxed: No checks are made. Not recommended.
 
 JWS (JSON Web Signature) is a part of the JWT specification. It defines how messages are signed. JWS defines algorithms for all three Producer Levels:
 
@@ -93,7 +93,7 @@ For Level 2, a well-known, public HMAC256 'secret' is defined. For Level 3, Prod
 
 # Discussion
 
-## Producer Levels 
+## Producer Levels
 
 For some Producers, or Consumers who rely on them, it is important that the sender and integrity of a DUL message can be reliably known. Level 3, the default level, provides this functionality.
 
@@ -103,11 +103,11 @@ Some Producers may be unable to apply any integrity or authentication verificati
 
 ## Reliability of Integrity Checks at Level 2
 
-The Integrity Check performed at Producer Level 2 is able to demonstrate that the message has not changed between the Producer and the Consumer. This gives some confidence to the Consumer that the message has not been accidentally altered with en route, and that the complete message has been received. 
+The Integrity Check performed at Producer Level 2 is able to demonstrate that the message has not changed between the Producer and the Consumer. This gives some confidence to the Consumer that the message has not been accidentally altered with en route, and that the complete message has been received.
 
 Level 2 does not guard against malicious interference because it is possible to tamper with the message and re-create the signature.
 
-Both the Producer and the Consumer require access to the HMAC 'secret' in order to sign and validate respectively. Therefore any party with access to the 'secret' is able to maliciously tamper with the message and re-sign it. Because one of the aims of the Message Authentication specification is that Producers messages may be shared with other parties, public or private, the 'secret' is published and known by all parties.
+Both the Producer and the Consumer require access to the HMAC 'secret' in order to sign and validate respectively. Therefore any party with access to the 'secret' is able to maliciously tamper with the message and re-sign it. Because one of the aims of the Message Authentication specification is that Producer's messages may be shared with other parties, public or private, the 'secret' is published and known by all parties.
 
 Level 2 doesn't provide protection against replay attacks or non-repudiation. For these features Level 3 is required.
 
@@ -119,7 +119,7 @@ Every Producer has a Public / Private keypair. According to the principles of Pu
 
 ## Consumer Levels
 
-Similarly, for some Consumers, the integrity and authenticity of the message was important, and for some it was not. Therefore, the 'strict' default Level allows Consumers to be confident of the integrity and/or authenticity of messages they receive. 
+Similarly, for some Consumers, the integrity and authenticity of the message was important, and for some it was not. Therefore, the 'strict' default Level allows Consumers to be confident of the integrity and/or authenticity of messages they receive.
 
 The 'relaxed' Level allows Consumers to read DUL messages but not to make any guarantees of integrity or authenticity.
 
@@ -160,9 +160,9 @@ An example URL:
 
 The Authority is responsible for storing and serving these JWK keys.
 
-The Recommended DUL Message Authentication Specification stipulates that the URL must be match a specified prefix, to ensure that only JKUs issued by the  Authority can be accepted. 
+The Recommended DUL Message Authentication Specification stipulates that the URL must be match a specified prefix, to ensure that only JKUs issued by the  Authority can be accepted.
 
-Furthermore, the Producer ID must be included are a prefix of the ID, and this must match the `iss` field in the JWS header. 
+Furthermore, the Producer ID must be included are a prefix of the ID, and this must match the `iss` field in the JWS header.
 
 ![structure of a DUL message](structure.png)
 
@@ -172,7 +172,7 @@ The Specification section is normative. A non-normative reference implementation
 
 ### Supplementary
 
-1. Whitelist URL: "https://dul-token.crossref.org/tokens/jwk/" 
+1. Whitelist URL: "https://dul-token.crossref.org/tokens/jwk/"
 2. HMAC256 'secret': "dul-77d343c3-f8e8-48d9-9e14-1e52aa8611e8"
 
 ### Functional Specifications
@@ -284,7 +284,7 @@ October 2016
 
 ### Reference Implementation
 
-A reference implementation is provided at [https://github.com/CrossRef/dul-tool](https://github.com/CrossRef/dul-tool). It contains a full implementation of the Specification, plus implementation notes. 
+A reference implementation is provided at [https://github.com/CrossRef/dul-tool](https://github.com/CrossRef/dul-tool). It contains a full implementation of the Specification, plus implementation notes.
 
 The [Nimbus JOSE library and tools](http://connect2id.com/products/nimbus-jose-jwt) are a good reference for JOSE and JWS. The DUL reference implementation is a thin wrapper around this.
 
@@ -292,9 +292,9 @@ The [Nimbus JOSE library and tools](http://connect2id.com/products/nimbus-jose-j
 
 ### PGP-Signed Messages
 
-PGP is an open source encryption and authentication framework that uses Public / Private Keys. It a popular tool for signing emails. It relies on a web of trust for establishing trust between the Provider and Consumer. 
+PGP is an open source encryption and authentication framework that uses Public / Private Keys. It a popular tool for signing emails. It relies on a web of trust for establishing trust between the Provider and Consumer.
 
-The principles behind PGP are very similar do DUL, but JWT provides a simpler implementation. 
+The principles behind PGP are very similar do DUL, but JWT provides a simpler implementation.
 
 ### Opaque Tokens
 
@@ -329,7 +329,7 @@ HTTP headers were considered as an earlier proposal for source tokens. It was su
 JWT encapsulates the concept of header, body payload and signature, similar to an HTTP message. JWT has some advantages:
 
  - a JWT has built-in JWS signing as a default. This means that semantics about how to use headers are well-defined.
- - a JWT is encapsulated as a single object. This means that a JWT can be stored for processing later, transmission to another party, or as part of an audit chain. 
+ - a JWT is encapsulated as a single object. This means that a JWT can be stored for processing later, transmission to another party, or as part of an audit chain.
 
 Furthermore, in order to securely identify the sender of the message, the Producer ID must be included in the signed message. If the signature were stored in an HTTP header then this would not be possible. With JWT, the headers are included in the signature.
 
@@ -355,11 +355,11 @@ JWS provides two kinds of algorithms (RFC 7581 §3.1): checksum based (HMAC), an
 
 ### Why is the HMAC secret public?
 
-HMAC is a symmetrical algorithm: the secret used to sign the payload must be known both to the Producer and Consumer. Therefore it must be made known to all Producers and all Consumers. The DUL Working Group identified the need to be able to share DUL messages with third parties or even make them known publicly. This would further broaden the audience who would need to know the secret. 
+HMAC is a symmetrical algorithm: the secret used to sign the payload must be known both to the Producer and Consumer. Therefore it must be made known to all Producers and all Consumers. The DUL Working Group identified the need to be able to share DUL messages with third parties or even make them known publicly. This would further broaden the audience who would need to know the secret.
 
 Keeping the secret confidential under these circumstances would constitute 'security by obscurity', which is a well known way of achieving no security whatsoever. For this reason, it is better to publish the secret and make it well known.
 
-This does mean anyone can sign a DUL message. Therefore Level 2 protects message integrity against accidental damage, but not against intentional bad actors. For this we have Level 3, which is the recommended Level. 
+This does mean anyone can sign a DUL message. Therefore Level 2 protects message integrity against accidental damage, but not against intentional bad actors. For this we have Level 3, which is the recommended Level.
 
 ### Why allow insecure communication at Level 1?
 
@@ -474,7 +474,7 @@ Instead, using JKUs, the keys are downloaded only when needed, and automatically
 
 ### Is signature stripping possible?
 
-Signature stripping is the process of taking a payload, maliciously altering it, and re-signing. 
+Signature stripping is the process of taking a payload, maliciously altering it, and re-signing.
 
 Level 3 signing requires the Producer to sign the message with their private key, which is known only by them. Therefore it is not possible for a malicious party to to re-sign the message using a fraudulent key.
 
@@ -483,15 +483,3 @@ Furthermore, the URL whitelist prevents fraudulently signed messages from non DU
 ### Is this vulnerable to common JWT attacks?
 
 Security at Level 1 is quantified, and Level 2 (where signature stripping is possible) is not allowed in 'strict' Consumer mode. You can read about [past JWT vulnerabilities here](https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/).
-
-
-
-
-
-
-
-
-
-
-
-
