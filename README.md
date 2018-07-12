@@ -83,7 +83,7 @@ The tool conforms to the following specifications:
     1. The JWS must validate using the 'hmac256' algorithm and the hard-coded secret.
   4. If the `alg` header field is 'rsa256':
     1. The `jku` header field must be present or validation will fail.
-    2. The `jku` header field must be a URL that has the prefix "https://dul-token.crossref.org/tokens/jwk/PRODUCER_ID", where `PRODUCER_ID` exactly matches the `iss` header field. If the URL does not match the validation will fail.
+    2. The `jku` header field must be a URL that has the prefix "https://dul.crossref.org/tokens/jwk/PRODUCER_ID", where `PRODUCER_ID` exactly matches the `iss` header field. If the URL does not match the validation will fail.
     3. There must be a valid public key JWK available at the given URL.
     4. The first available key will be taken from the keyset if more than one is available.
     5. The JWS of the JWT must succeed using the RSA256 algorithm and this key.
@@ -119,16 +119,16 @@ Jim, Fred and Sheila are Producers who want to send data.
     $ cat demo/output/fred-dul-message.jwt && echo
     eyJpc3MiOiJmcmVkIiwiYWxnIjoiSFMyNTYifQ.ewogICJ1dWlkIjogImU1ODNlY2EwLWZkZjQtNDVmZi04YzhlLTJjM2NlMTE5NmVhMiIsCiAgIm1lc3NhZ2UtdHlwZSI6ICJjb3VudGVyLWRvd25sb2FkIiwKICAic291cmNlLXRva2VuIjogImZyZWQiLAogICJjYWxsYmFjayI6ICJodHRwOi8vZXhhbXBsZS5jb20vY291bnRlci1zaGFyZS1jYWxsYmFjayIsCiAgIm1lc3NhZ2UiOiB7CiAgICAiZWxlbWVudC0xIjogImZvbyIsCiAgICAiZWxlbWVudC0yIjogImJhciIKICB9ICAKfQ.-BZmBt1kRrVYTnQzTX-5HXSPUnEKinwPGUxFusbxQOM
 
-3: Sheila is a level 3 producer. She's got a DUL envelope to send, lcoated in `demo/sheila-dul-envelope.json`. She has created a public/private key JWK and placed it in `demo/sheilas-private-jwk.json`. She's sent ito Crossref, who sent her back a JKU URL of `https://dul-token.crossref.org/tokens/jwk/example-provider.json`.
+3: Sheila is a level 3 producer. She's got a DUL envelope to send, lcoated in `demo/sheila-dul-envelope.json`. She has created a public/private key JWK and placed it in `demo/sheilas-private-jwk.json`. She's sent ito Crossref, who sent her back a JKU URL of `https://dul.crossref.org/tokens/jwk/example-provider.json`.
 
-    $ PRODUCER_LEVEL=3 PRODUCER_ID='sheila' JKU_URL='https://dul-token.crossref.org/tokens/jwk/sheila/example.json' JWK='demo/sheilas-private-jwk.json' java -jar demo/dultool.jar sign demo/sheila-dul-envelope.json demo/output/sheila-dul-message.jwt
+    $ PRODUCER_LEVEL=3 PRODUCER_ID='sheila' JKU_URL='https://dul.crossref.org/tokens/jwk/sheila/example.json' JWK='demo/sheilas-private-jwk.json' java -jar demo/dultool.jar sign demo/sheila-dul-envelope.json demo/output/sheila-dul-message.jwt
 
     $ cat demo/output/sheila-dul-message.jwt && echo
     eyJpc3MiOiJzaGVpbGEiLCJhbGciOiJSUzI1NiIsImprdSI6Imh0dHBzOlwvXC9kdWwtdG9rZW4uY3Jvc3NyZWYub3JnXC90b2tlbnNcL2p3a1wvc2hlaWxhXC9leGFtcGxlLmpzb24ifQ.ewogICJ1dWlkIjogImU1ODNlY2EwLWZkZjQtNDVmZi04YzhlLTJjM2NlMTE5NmVhMyIsCiAgIm1lc3NhZ2UtdHlwZSI6ICJjb3VudGVyLWRvd25sb2FkIiwKICAic291cmNlLXRva2VuIjogInNoZWxpYSIsCiAgImNhbGxiYWNrIjogImh0dHA6Ly9leGFtcGxlLmNvbS9jb3VudGVyLXNoYXJlLWNhbGxiYWNrIiwKICAibWVzc2FnZSI6IHsKICAgICJlbGVtZW50LTEiOiAiZm9vIiwKICAgICJlbGVtZW50LTIiOiAiYmFyIgogIH0gIAp9.iTfJ-nmw11mOTtUvCfMF3jPhGytx07pbsQ9n4tBFPeFI8oZ3AbWixudphWV5SKPsLE6tCFvcpbq9qWU5eshdfHoY6DQwiZZLrJXj9g1BfCTmO08cBMN4i2ap_8bd-tVpG13TAyb79WeA3ApuVh_gA_zlXoTmRpJQVyza4cratS2XtET5xb2SsF-ooWzOWs6WoeQTd1MNnD3BoXGI62FNHRvuXZXqVNzP_PX9A3k84vKiVlu7fS7w06XusggCnaNM64lo17RraI0Y-6rINLC-tgvYkPzz3u7vrhI1VZEfGj8-vFnrKcYBLRU8t1TyT7ChCtDMxjO49D4Iageukc5B5w
 
 As level 3 is the default, she could also have typed:
 
-    PRODUCER_ID='sheila' JKU_URL='https://dul-token.crossref.org/tokens/jwk/sheila/example.json' JWK='demo/sheilas-private-jwk.json' java -jar demo/dultool.jar sign demo/sheila-dul-envelope.json demo/output/sheila-dul-message.jwt
+    PRODUCER_ID='sheila' JKU_URL='https://dul.crossref.org/tokens/jwk/sheila/example.json' JWK='demo/sheilas-private-jwk.json' java -jar demo/dultool.jar sign demo/sheila-dul-envelope.json demo/output/sheila-dul-message.jwt
 
 ### Consumers
 
