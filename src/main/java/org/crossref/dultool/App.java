@@ -148,7 +148,7 @@ public class App {
 
   private static String HMAC_SECRET = "dul-77d343c3-f8e8-48d9-9e14-1e52aa8611e8";
 
-  private static String WHITELIST_URL_PREFIX = "https://dul-token.crossref.org/tokens/jwk/";
+  private static String WHITELIST_URL_PREFIX = "https://dul.crossref.org/tokens/jwk/";
 
   private static List<JWSAlgorithm> STRICT_ALGORITHMS = Arrays.asList(JWSAlgorithm.RS256, JWSAlgorithm.HS256);
 

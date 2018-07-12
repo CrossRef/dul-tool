@@ -163,7 +163,7 @@ JWS defines a `jku` (JWS Key URL) field in the JWS header. This is a URL that ho
 
 An example URL:
 
-    https://dul-token.crossref.org/tokens/jwk/producer-1234/example.json
+    https://dul.crossref.org/tokens/jwk/producer-1234/example.json
     \_____________ Whitelisted Prefix ______/\_ Producer _/\_ Keyname _/
 
 The Authority is responsible for storing and serving these JWK keys.
@@ -180,7 +180,7 @@ The Specification section is normative. A non-normative reference implementation
 
 ### Supplementary
 
-1. Whitelist URL: "https://dul-token.crossref.org/tokens/jwk/"
+1. Whitelist URL: "https://dul.crossref.org/tokens/jwk/"
 2. HMAC256 'secret': "dul-77d343c3-f8e8-48d9-9e14-1e52aa8611e8"
 
 ### Functional Specifications
