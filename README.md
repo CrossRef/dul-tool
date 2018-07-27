@@ -240,7 +240,7 @@ Because Fred used Level 2 (HMAC), the output ingegrity could be verified ok.
 
 3: Strict Spqr reads Sheila.
 
-    $ CONSUMER_LEVEL=strict java -jar demo/dultool.jar validate demo/output/sheila-dul-message.jwt demo/output/output/sheila-strict.json
+    $ CONSUMER_LEVEL=strict java -jar demo/dultool.jar validate demo/output/sheila-dul-message.jwt demo/output/sheila-strict.json
     shiela
 
     $ echo $? # exit code

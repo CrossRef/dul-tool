@@ -164,7 +164,7 @@ JWS defines a `jku` (JWS Key URL) field in the JWS header. This is a URL that ho
 An example URL:
 
     https://dul.crossref.org/tokens/jwk/producer-1234/example.json
-    \_____________ Whitelisted Prefix ______/\_ Producer _/\_ Keyname _/
+    \__________ Whitelisted Prefix ____/\_ Producer _/\_ Keyname _/
 
 The Authority is responsible for storing and serving these JWK keys.
 
